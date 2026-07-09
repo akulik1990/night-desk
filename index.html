@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Night Desk</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --ink: #15130f;
+  --panel: #201d17;
+  --panel2: #2a2620;
+  --line: #3a352c;
+  --text: #e9e2d0;
+  --muted: #97896b;
+  --accent: #d9a441;
+  --maf: #c65b4e;
+  --town: #7fa7c9;
+  --ghost: #7d766a;
+  --good: #79a86b;
+  --serif: Georgia, "Times New Roman", serif;
+}
+
+body {
+  font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+  background: var(--ink);
+  color: var(--text);
+  line-height: 1.55;
+  min-height: 100vh;
+}
+
+.wrap { max-width: 1100px; margin: 0 auto; padding: 1.25rem; }
+
+header.masthead {
+  border-bottom: 3px double var(--line);
+  padding: 0.75rem 0 0.6rem;
+  margin-bottom: 1.25rem;
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+}
+header.masthead h1 {
+  font-family: var(--serif);
+  font-size: 1.6rem;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+}
+header.masthead .sub { color: var(--muted); font-size: 0.85rem; font-style: italic; }
+
+h2 {
+  font-family: var(--serif);
+  font-size: 1.05rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 0.6rem;
+}
+h3 { font-family: var(--serif); font-size: 1rem; margin-bottom: 0.4rem; }
+
+.card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--accent);
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+textarea, select, input {
+  background: var(--panel2);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  padding: 0.4rem 0.5rem;
+  font: inherit;
+  font-size: 0.9rem;
+}
+textarea { width: 100%; resize: vertical; }
+textarea:focus, select:focus { outline: 1px solid var(--accent); }
+
+.btn {
+  background: var(--panel2);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  padding: 0.4rem 0.9rem;
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+.btn:hover { border-color: var(--accent); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #1a1408; font-weight: 600; }
+.btn.primary:hover { filter: brightness(1.1); }
+.btn.sm { padding: 0.15rem 0.55rem; font-size: 0.8rem; }
+.btn:disabled { opacity: 0.4; cursor: default; }
+
+.row { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; margin-top: 0.6rem; }
+.counter { color: var(--muted); font-size: 0.85rem; margin-top: 0.3rem; }
+.error { color: var(--maf); font-size: 0.85rem; margin-top: 0.3rem; }
+
+/* roster */
+ol.roster { list-style: none; }
+ol.roster li {
+  display: flex;
+  gap: 0.5rem;
+  align-items: baseline;
+  padding: 0.15rem 0.25rem;
+  border-bottom: 1px dotted var(--line);
+  font-size: 0.9rem;
+}
+ol.roster .pos {
+  font-family: var(--serif);
+  color: var(--muted);
+  min-width: 1.4rem;
+  text-align: right;
+}
+ol.roster .name { flex: 1; }
+ol.roster li.dead .name { text-decoration: line-through; color: var(--muted); }
+ol.roster li.dead .name::after { content: " \2020"; color: var(--maf); text-decoration: none; }
+ol.roster li.ghostrow .name { color: var(--ghost); font-style: italic; }
+
+.tag {
+  font-size: 0.68rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 0 0.35rem;
+  border-radius: 2px;
+  border: 1px solid var(--line);
+  color: var(--muted);
+}
+.tag.maf { color: var(--maf); border-color: var(--maf); }
+.tag.cop, .tag.medic, .tag.vigi { color: var(--town); border-color: var(--town); }
+
+/* two-column play layout */
+.cols { display: grid; grid-template-columns: 320px 1fr; gap: 1.25rem; align-items: start; }
+.cols aside { position: sticky; top: 1rem; }
+@media (max-width: 800px) {
+  .cols { grid-template-columns: 1fr; }
+  .cols aside { position: static; }
+}
+
+/* night / day sections */
+.day-strip {
+  font-family: var(--serif);
+  color: var(--muted);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  margin: 1.1rem 0 0.4rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.day-strip::before, .day-strip::after { content: ""; flex: 1; border-top: 1px solid var(--line); }
+
+.field { margin-bottom: 0.55rem; }
+.field label { display: block; font-size: 0.78rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+.field select { min-width: 200px; }
+.badge {
+  display: inline-block;
+  margin-left: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  padding: 0.05rem 0.45rem;
+  border-radius: 2px;
+}
+.badge.same { background: var(--maf); color: #fff; }
+.badge.different { background: var(--town); color: #14202b; }
+.note { color: var(--muted); font-size: 0.8rem; font-style: italic; }
+
+.rngrow { display: flex; gap: 0.5rem; align-items: center; font-size: 0.9rem; }
+.rngval { font-family: var(--serif); font-size: 1.05rem; min-width: 1.1rem; text-align: center; color: var(--accent); }
+
+/* copy-paste blocks */
+.paste { border: 1px solid var(--line); margin-top: 0.7rem; }
+.paste .head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--panel2);
+  padding: 0.25rem 0.6rem;
+  font-size: 0.78rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.paste pre {
+  padding: 0.6rem;
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 0.85rem;
+  white-space: pre-wrap;
+  min-height: 1.4rem;
+}
+.btn-copy {
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  color: var(--muted);
+  font-size: 0.75rem;
+  padding: 0.05rem 0.5rem;
+  cursor: pointer;
+}
+.btn-copy:hover { color: var(--accent); border-color: var(--accent); }
+.btn-copy.done { color: var(--good); border-color: var(--good); }
+
+.winbanner {
+  font-family: var(--serif);
+  text-align: center;
+  font-size: 1.15rem;
+  letter-spacing: 0.1em;
+  padding: 0.6rem;
+  margin-bottom: 1rem;
+  border: 1px solid;
+}
+.winbanner.Mafia { color: var(--maf); border-color: var(--maf); background: rgba(198, 91, 78, 0.08); }
+.winbanner.Town { color: var(--town); border-color: var(--town); background: rgba(127, 167, 201, 0.08); }
+
+.decided { color: var(--muted); font-style: italic; padding: 0.5rem 0; }
+.hidden { display: none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="masthead">
+    <h1>Night Desk</h1>
+    <span class="sub">mafia moderator console</span>
+  </header>
+
+  <section id="setup">
+    <div class="card">
+      <h2>Roster</h2>
+      <textarea id="names" rows="8" placeholder="13-15 names, one per line or comma-separated"></textarea>
+      <p id="namecount" class="counter">0/15 names</p>
+      <p id="nameerr" class="error hidden"></p>
+      <div class="row">
+        <button id="btn-rand" class="btn primary">Deal Roles</button>
+      </div>
+    </div>
+    <div id="preview" class="card hidden">
+      <h2>The Deal</h2>
+      <ol id="preview-list" class="roster"></ol>
+      <div class="row">
+        <button id="btn-redeal" class="btn">Re-deal</button>
+        <button id="btn-accept" class="btn primary">Accept &amp; Run Game</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="play" class="cols hidden">
+    <aside>
+      <div id="winbox"></div>
+      <div class="card">
+        <h2>Roster</h2>
+        <ol id="roster" class="roster"></ol>
+      </div>
+      <div class="card">
+        <h2>Role Reveal</h2>
+        <div class="paste">
+          <div class="head"><span>discord</span><button class="btn-copy" data-copy="reveal-pre">Copy</button></div>
+          <pre id="reveal-pre"></pre>
+        </div>
+      </div>
+      <button id="btn-newgame" class="btn" style="width:100%">New Game</button>
+    </aside>
+    <main>
+      <div id="log"></div>
+      <div class="row">
+        <button id="btn-next" class="btn primary"></button>
+      </div>
+    </main>
+  </section>
+</div>
+
+<script>
+"use strict";
+const GHOST = "Ghost";
+const STORE = "night-desk-v1";
+const $ = (s) => document.querySelector(s);
+
+let state = { phase: "setup", players: [], nights: [], votes: {} };
+let lastFocusKey = null;
+
+// --- tiny DOM helper (no innerHTML anywhere) ---
+function h(tag, attrs = {}, ...kids) {
+  const n = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === "class") n.className = v;
+    else if (k === "dataset") Object.assign(n.dataset, v);
+    else if (k.startsWith("on")) n.addEventListener(k.slice(2), v);
+    else n[k] = v;
+  }
+  for (const kid of kids.flat()) {
+    if (kid == null) continue;
+    n.appendChild(typeof kid === "string" ? document.createTextNode(kid) : kid);
+  }
+  return n;
+}
+
+// --- randomness ---
+const rand = () => crypto.getRandomValues(new Uint32Array(1))[0] / 4294967296;
+function shuffle(a) {
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// --- setup ---
+function parseNames(raw) {
+  const parts = raw.includes(",") ? raw.split(",") : raw.split("\n");
+  return parts.map((s) => s.trim()).filter(Boolean);
+}
+
+function validateNames(names) {
+  const seen = new Set(), dupes = [];
+  for (const n of names) {
+    const l = n.toLowerCase();
+    if (seen.has(l)) dupes.push(n);
+    seen.add(l);
+  }
+  if (dupes.length) throw new Error("Duplicate names: " + dupes.join(", "));
+  if (names.length < 13 || names.length > 15)
+    throw new Error(`Need 13-15 players, got ${names.length}`);
+}
+
+// Zones: 1-3 mafia (real only), 4-6 cop/medic/vigi, 7-15 town.
+// Ghosts pad to 15 and land only in positions 4+ (0 or 1 in the 4-6 block).
+function deal(names) {
+  const ghosts = 15 - names.length;
+  const real = shuffle([...names]);
+  const mafia = real.slice(0, 3);
+  let rest = real.slice(3);
+
+  const gZone2 = Math.min(ghosts, Math.round(rand()));
+  const zone2 = shuffle([...rest.slice(0, 3 - gZone2), ...Array(gZone2).fill(GHOST)]);
+  const zone3 = shuffle([...rest.slice(3 - gZone2), ...Array(ghosts - gZone2).fill(GHOST)]);
+
+  return [...shuffle(mafia), ...zone2, ...zone3].map((name, i) => ({
+    pos: i + 1,
+    name,
+    ghost: name === GHOST,
+  }));
+}
+
+const roleOf = (p) =>
+  p.pos <= 3 ? "Mafia" : p.pos === 4 ? "Cop" : p.pos === 5 ? "Medic" : p.pos === 6 ? "Vigi" : "Town";
+const alignOf = (p) => (p.pos <= 3 ? "Mafia" : "Town");
+const byName = (name) => state.players.find((p) => p.name === name);
+const special = (pos) => state.players.find((p) => p.pos === pos);
+
+// --- game timeline ---
+// Order of events: N0, D1, N1, D2, N2, ...  Votes and night deaths accumulate.
+function vigiUsedBefore(n) {
+  return state.nights.some((x) => x.night < n && x.vigi);
+}
+
+function resolveNight(nd, before) {
+  const counts = {};
+  const add = (name) => {
+    if (name && !before.has(name)) counts[name] = (counts[name] || 0) + 1;
+  };
+  for (const k of nd.kills) add(k);
+  const vigi = special(6);
+  if (nd.vigi && !vigi.ghost && !before.has(vigi.name) && !vigiUsedBefore(nd.night)) add(nd.vigi);
+  const medic = special(5);
+  if (nd.medic && !medic.ghost && !before.has(medic.name) && counts[nd.medic] > 0)
+    counts[nd.medic]--;
+  return Object.keys(counts).filter((k) => counts[k] > 0);
+}
+
+function timeline() {
+  const dead = new Set();
+  const beforeDay = {}, beforeNight = {}, deaths = {};
+  const maxN = state.nights.length ? state.nights[state.nights.length - 1].night : -1;
+  for (let n = 0; n <= maxN; n++) {
+    beforeDay[n] = new Set(dead);
+    if (n >= 1 && state.votes[n]) dead.add(state.votes[n]);
+    beforeNight[n] = new Set(dead);
+    const nd = state.nights.find((x) => x.night === n);
+    if (nd && !winnerAt(beforeNight[n])) {
+      deaths[n] = resolveNight(nd, beforeNight[n]);
+      deaths[n].forEach((d) => dead.add(d));
+    } else {
+      deaths[n] = [];
+    }
+  }
+  return { beforeDay, beforeNight, deaths, dead };
+}
+
+function winnerAt(dead) {
+  const alive = (f) => state.players.filter((p) => !p.ghost && f(p) && !dead.has(p.name)).length;
+  const m = alive((p) => alignOf(p) === "Mafia");
+  const t = alive((p) => alignOf(p) === "Town");
+  if (m === 0) return "Town";
+  if (m >= t) return "Mafia";
+  return null;
+}
+
+// Clear stored picks that became illegal after edits (dead targets, dead actors,
+// second kill without 3 mafia). Loop because clearing can revive someone.
+function fixState() {
+  for (let pass = 0; pass < 10; pass++) {
+    const t = timeline();
+    let changed = false;
+    const aliveReal = (dead) => state.players.filter((p) => !p.ghost && !dead.has(p.name));
+    for (const nd of state.nights) {
+      const before = t.beforeNight[nd.night];
+      if (winnerAt(before)) {
+        if (nd.kills[0] || nd.kills[1] || nd.cop || nd.medic || nd.vigi) {
+          nd.kills = ["", ""]; nd.cop = ""; nd.medic = ""; nd.vigi = "";
+          changed = true;
+        }
+        continue;
+      }
+      const ok = new Set(aliveReal(before).map((p) => p.name));
+      const legalTarget = (name, actorPos) => {
+        if (!name || !ok.has(name)) return false;
+        return !actorPos || special(actorPos).name !== name;
+      };
+      const mafiaAlive = aliveReal(before).filter((p) => alignOf(p) === "Mafia").length;
+      nd.kills = nd.kills.map((k, i) => {
+        const legal = k && ok.has(k) && alignOf(byName(k)) === "Town" && (i === 0 || mafiaAlive === 3);
+        if (k && !legal) changed = true;
+        return legal ? k : "";
+      });
+      const actorOk = (pos) => !special(pos).ghost && !before.has(special(pos).name);
+      if (nd.cop && (!actorOk(4) || !legalTarget(nd.cop, 4))) { nd.cop = ""; changed = true; }
+      if (nd.medic && (!actorOk(5) || !legalTarget(nd.medic, 5))) { nd.medic = ""; changed = true; }
+      if (nd.vigi && (!actorOk(6) || vigiUsedBefore(nd.night) || !legalTarget(nd.vigi, 6))) {
+        nd.vigi = ""; changed = true;
+      }
+    }
+    for (const [d, v] of Object.entries(state.votes)) {
+      if (v && (!byName(v) || byName(v).ghost || t.beforeDay[d]?.has(v))) {
+        state.votes[d] = ""; changed = true;
+      }
+    }
+    if (!changed) return t;
+  }
+  return timeline();
+}
+
+// --- copy-paste text ---
+function revealText() {
+  const mafia = state.players.filter((p) => p.pos <= 3).map((p) => p.name);
+  return [
+    `Mafia: ||${mafia.join(", ")}||`,
+    `Cop: ||${special(4).name}||`,
+    `Medic: ||${special(5).name}||`,
+    `Vigi: ||${special(6).name}||`,
+  ].join("\n");
+}
+
+function copResult(nd) {
+  if (nd.night === 0 || !nd.cop) return null;
+  const prev = [...state.nights].reverse().find((x) => x.night < nd.night && x.cop);
+  if (!prev) return null;
+  return alignOf(byName(nd.cop)) === alignOf(byName(prev.cop))
+    ? { verdict: "SAME", to: prev.cop }
+    : { verdict: "DIFFERENT", to: prev.cop };
+}
+
+function nightText(nd, t) {
+  const lines = [`**Night ${nd.night}**`];
+  const kills = [...new Set(nd.kills.filter(Boolean))];
+  if (kills.length) lines.push(`mafia: ||killed ${kills.join(", ")}||`);
+  if (nd.cop) {
+    const r = copResult(nd);
+    lines.push(r ? `cop: ||check ${nd.cop} - ${r.verdict} to ${r.to}||` : `cop: ||check ${nd.cop}||`);
+  }
+  if (nd.medic) lines.push(`medic: ||saved ${nd.medic}||`);
+  const vigi = special(6);
+  const vigiActive = !vigi.ghost && !t.beforeNight[nd.night].has(vigi.name) && !vigiUsedBefore(nd.night);
+  if (nd.vigi) lines.push(`vigi: ||shot ${nd.vigi}||`);
+  else if (vigiActive) lines.push(`vigi: ||holstered||`);
+  if (nd.rng[0] != null && nd.rng[1] != null) lines.push(`rngs: ${nd.rng[0] + nd.rng[1]}`);
+  return lines.join("\n");
+}
+
+function deathText(nd, t) {
+  const d = [...t.deaths[nd.night]].sort();
+  return `Night ${nd.night} — ` + (d.length ? `${d.join(", ")} died.` : "no one died.");
+}
+
+// --- rendering ---
+function tagFor(p) {
+  const role = roleOf(p);
+  if (p.ghost) return h("span", { class: "tag" }, "ghost");
+  if (role === "Town") return null;
+  return h("span", { class: "tag " + role.toLowerCase() }, role);
+}
+
+function mkSelect(options, current, placeholder, onchange, key) {
+  const sel = h("select", { onchange: (e) => { lastFocusKey = key; onchange(e.target.value); } },
+    h("option", { value: "" }, placeholder),
+    options.map((name) => h("option", { value: name }, name)));
+  if (key) sel.dataset.key = key;
+  sel.value = current || "";
+  return sel;
+}
+
+function copyBtn(getText) {
+  const b = h("button", { class: "btn-copy" }, "Copy");
+  b.addEventListener("click", () => {
+    navigator.clipboard.writeText(getText()).then(() => {
+      b.textContent = "Copied";
+      b.classList.add("done");
+      setTimeout(() => { b.textContent = "Copy"; b.classList.remove("done"); }, 1500);
+    });
+  });
+  return b;
+}
+
+function pasteBlock(label, text, preId) {
+  return h("div", { class: "paste" },
+    h("div", { class: "head" }, h("span", {}, label),
+      copyBtn(() => document.getElementById(preId).textContent)),
+    h("pre", { id: preId }, text));
+}
+
+// Build the roster once, then only toggle classes — destroying nodes above
+// the scroll position makes the preview panel lose its scroll anchor.
+function renderRoster(dead) {
+  const ol = $("#roster");
+  if (ol.children.length !== state.players.length) {
+    ol.replaceChildren(...state.players.map((p) =>
+      h("li", {},
+        h("span", { class: "pos" }, String(p.pos)),
+        h("span", { class: "name" }, p.name),
+        tagFor(p))));
+  }
+  state.players.forEach((p, i) => {
+    ol.children[i].className =
+      (dead.has(p.name) ? "dead " : "") + (p.ghost ? "ghostrow" : "");
+  });
+}
+
+function fieldRow(labelText, control, extra) {
+  return h("div", { class: "field" }, h("label", {}, labelText), control, extra);
+}
+
+function buildRngKids(nd) {
+  const slot = (i) => {
+    if (nd.rng[i] != null) return h("span", { class: "rngval" }, String(nd.rng[i]));
+    return h("button", { class: "btn sm", onclick: () => {
+      const slices = i === 1 ? [0, 1] : [0, 1, 1];
+      nd.rng[i] = slices[crypto.getRandomValues(new Uint32Array(1))[0] % slices.length];
+      update(`night-${nd.night}`);
+    } }, "Roll");
+  };
+  const total = nd.rng[0] != null && nd.rng[1] != null ? String(nd.rng[0] + nd.rng[1]) : "?";
+  return [slot(0), h("span", {}, "+"), slot(1), h("span", {}, "="),
+    h("span", { class: "rngval" }, total)];
+}
+
+function renderNight(nd, t) {
+  const card = h("div", { class: "card", id: `night-${nd.night}` }, h("h3", {}, `Night ${nd.night}`));
+  const before = t.beforeNight[nd.night];
+
+  if (winnerAt(before)) {
+    card.appendChild(h("p", { class: "decided" }, "Game was decided before this night."));
+    return card;
+  }
+
+  const aliveReal = state.players.filter((p) => !p.ghost && !before.has(p.name));
+  const names = (f) => aliveReal.filter(f).map((p) => p.name);
+  const set = (key, i) => (v) => {
+    if (i == null) nd[key] = v; else nd.kills[i] = v;
+    update(`night-${nd.night}`);
+  };
+
+  const mafiaAlive = aliveReal.filter((p) => alignOf(p) === "Mafia").length;
+  card.appendChild(fieldRow(mafiaAlive === 3 ? "Mafia kill 1" : "Mafia kill (1 KP)",
+    mkSelect(names((p) => alignOf(p) === "Town"), nd.kills[0], "no kill", set("kills", 0), `n${nd.night}-kill0`)));
+  if (mafiaAlive === 3)
+    card.appendChild(fieldRow("Mafia kill 2",
+      mkSelect(names((p) => alignOf(p) === "Town"), nd.kills[1], "no kill", set("kills", 1), `n${nd.night}-kill1`)));
+
+  const lockedNote = (label, text) =>
+    card.appendChild(fieldRow(label, h("span", { class: "note" }, text)));
+
+  // Dead role actors stay visible but locked; ghost slots mean the role
+  // doesn't exist this game and are skipped entirely.
+  const roleField = (pos, label, build) => {
+    const p = special(pos);
+    if (p.ghost) return;
+    if (before.has(p.name)) lockedNote(label, `${p.name} is dead`);
+    else build();
+  };
+
+  roleField(4, "Cop check", () => {
+    const r = copResult(nd);
+    card.appendChild(fieldRow("Cop check",
+      mkSelect(names((p) => p.pos !== 4), nd.cop, "no check", set("cop"), `n${nd.night}-cop`),
+      h("span", { class: "badge" + (r ? " " + r.verdict.toLowerCase() : " hidden"),
+        id: `copbadge-${nd.night}` }, r ? r.verdict : "")));
+  });
+  roleField(5, "Medic save", () =>
+    card.appendChild(fieldRow("Medic save",
+      mkSelect(names((p) => p.pos !== 5), nd.medic, "no save", set("medic"), `n${nd.night}-medic`))));
+  roleField(6, "Vigilante", () => {
+    if (vigiUsedBefore(nd.night)) lockedNote("Vigilante", "shot already spent");
+    else
+      card.appendChild(fieldRow("Vigilante",
+        mkSelect(names((p) => p.pos !== 6), nd.vigi, "holster", set("vigi"), `n${nd.night}-vigi`)));
+  });
+
+  // RNG formals for the next day: slot 1 weighted 2/3 for a 1, slot 2 a coin flip.
+  card.appendChild(fieldRow(`Formals (Day ${nd.night + 1})`,
+    h("div", { class: "rngrow", id: `rng-${nd.night}` }, buildRngKids(nd))));
+
+  card.appendChild(pasteBlock(`Night ${nd.night} — discord`, nightText(nd, t), `out-${nd.night}`));
+  card.appendChild(pasteBlock("deaths (mod only)", deathText(nd, t), `deaths-${nd.night}`));
+  return card;
+}
+
+// In-place refresh of the parts of a night card its own edits can change:
+// output texts, cop badge, RNG row. Structure (rows, options) is untouched.
+function patchNight(nd, t) {
+  const set = (id, text) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = text;
+  };
+  set(`out-${nd.night}`, nightText(nd, t));
+  set(`deaths-${nd.night}`, deathText(nd, t));
+  const badge = document.getElementById(`copbadge-${nd.night}`);
+  if (badge) {
+    const r = copResult(nd);
+    badge.textContent = r ? r.verdict : "";
+    badge.className = "badge" + (r ? " " + r.verdict.toLowerCase() : " hidden");
+  }
+  const rng = document.getElementById(`rng-${nd.night}`);
+  if (rng) rng.replaceChildren(...buildRngKids(nd));
+}
+
+function buildDayBlock(nd, t) {
+  const wrap = h("div", { id: `day-${nd.night}` },
+    h("div", { class: "day-strip" }, `Day ${nd.night}`));
+  const before = t.beforeDay[nd.night];
+  if (winnerAt(before)) {
+    wrap.appendChild(h("p", { class: "decided" }, "Game was decided before this day."));
+  } else {
+    const alive = state.players.filter((p) => !p.ghost && !before.has(p.name)).map((p) => p.name);
+    wrap.appendChild(h("div", { class: "card" },
+      fieldRow("Voted out",
+        mkSelect(alive, state.votes[nd.night], "no one",
+          (v) => { state.votes[nd.night] = v; update(`day-${nd.night}`); }, `d${nd.night}-vote`))));
+  }
+  return wrap;
+}
+
+// keepId names the day/night block the user is interacting with: it is never
+// replaced (only text-patched), so the browser keeps its scroll anchor and the
+// select being edited survives. Everything else is swapped in place by id.
+function renderPlay(keepId) {
+  const y = window.scrollY;
+  const t = fixState();
+
+  renderRoster(t.dead);
+  $("#reveal-pre").textContent = revealText();
+
+  const winner = winnerAt(t.dead);
+  $("#winbox").replaceChildren(winner
+    ? h("div", { class: "winbanner " + winner }, `${winner.toUpperCase()} WINS`)
+    : "");
+
+  const log = $("#log");
+  const sync = (id, build) => {
+    const cur = document.getElementById(id);
+    if (!cur) log.appendChild(build());
+    else if (id !== keepId) cur.replaceWith(build());
+    return id === keepId;
+  };
+  for (const nd of state.nights) {
+    if (nd.night >= 1) sync(`day-${nd.night}`, () => buildDayBlock(nd, t));
+    if (sync(`night-${nd.night}`, () => renderNight(nd, t))) patchNight(nd, t);
+  }
+
+  const next = state.nights.length ? state.nights[state.nights.length - 1].night + 1 : 0;
+  const btn = $("#btn-next");
+  btn.classList.toggle("hidden", !!winner);
+  btn.textContent = next === 0 ? "Start Night 0" : `Start Day ${next} & Night ${next}`;
+
+  localStorage.setItem(STORE, JSON.stringify(state));
+  window.scrollTo(0, y);
+  requestAnimationFrame(() => window.scrollTo(0, y));
+}
+
+// Deferred one tick: rerendering inside the change event destroys nodes while
+// the browser is still closing the dropdown. keepId protects the interacted
+// block; focus is restored to the same control if it was rebuilt anyway.
+function update(keepId) {
+  setTimeout(() => {
+    renderPlay(keepId);
+    if (lastFocusKey) {
+      const el = document.querySelector(`[data-key="${lastFocusKey}"]`);
+      if (el && el !== document.activeElement) el.focus({ preventScroll: true });
+    }
+  }, 0);
+}
+
+// --- setup wiring ---
+let pendingDeal = null;
+
+function renderPreview() {
+  $("#preview-list").replaceChildren(...pendingDeal.map((p) =>
+    h("li", { class: p.ghost ? "ghostrow" : "" },
+      h("span", { class: "pos" }, String(p.pos)),
+      h("span", { class: "name" }, p.name),
+      tagFor(p))));
+  $("#preview").classList.remove("hidden");
+}
+
+$("#names").addEventListener("input", () => {
+  const n = parseNames($("#names").value).length;
+  const ghosts = n >= 13 && n <= 15 ? 15 - n : 0;
+  $("#namecount").textContent = `${n}/15 names` + (ghosts ? ` (${ghosts} ghost${ghosts > 1 ? "s" : ""} will be added)` : "");
+});
+
+function doDeal() {
+  const err = $("#nameerr");
+  err.classList.add("hidden");
+  try {
+    const names = parseNames($("#names").value);
+    validateNames(names);
+    pendingDeal = deal(names);
+    renderPreview();
+  } catch (e) {
+    err.textContent = e.message;
+    err.classList.remove("hidden");
+  }
+}
+$("#btn-rand").addEventListener("click", doDeal);
+$("#btn-redeal").addEventListener("click", doDeal);
+
+$("#btn-accept").addEventListener("click", () => {
+  state = { phase: "play", players: pendingDeal, nights: [], votes: {} };
+  $("#setup").classList.add("hidden");
+  $("#play").classList.remove("hidden");
+  renderPlay();
+});
+
+$("#btn-next").addEventListener("click", () => {
+  const next = state.nights.length ? state.nights[state.nights.length - 1].night + 1 : 0;
+  state.nights.push({ night: next, kills: ["", ""], cop: "", medic: "", vigi: "", rng: [null, null] });
+  renderPlay();
+});
+
+$("#btn-newgame").addEventListener("click", () => {
+  if (!confirm("Start a new game? The current one is discarded.")) return;
+  localStorage.removeItem(STORE);
+  state = { phase: "setup", players: [], nights: [], votes: {} };
+  pendingDeal = null;
+  $("#names").value = "";
+  $("#namecount").textContent = "0/15 names";
+  $("#nameerr").classList.add("hidden");
+  $("#preview").classList.add("hidden");
+  $("#preview-list").replaceChildren();
+  $("#roster").replaceChildren();
+  $("#log").replaceChildren();
+  $("#winbox").replaceChildren();
+  $("#play").classList.add("hidden");
+  $("#setup").classList.remove("hidden");
+  window.scrollTo(0, 0);
+});
+
+// --- restore ---
+try {
+  const saved = JSON.parse(localStorage.getItem(STORE));
+  if (saved && saved.phase === "play" && Array.isArray(saved.players) && saved.players.length) {
+    state = saved;
+    $("#setup").classList.add("hidden");
+    $("#play").classList.remove("hidden");
+    renderPlay();
+  }
+} catch (e) { /* corrupt save: stay in setup */ }
+</script>
+</body>
+</html>
