@@ -303,7 +303,10 @@ ol.roster li.ghostrow .name { color: var(--ghost); font-style: italic; }
         </div>
       </div>
       <button id="btn-newgame" class="btn" style="width:100%">New Game</button>
-      <button id="btn-summary" class="btn hidden" style="width:100%; margin-top:0.5rem">Game Summary</button>
+      <div style="display:flex; gap:0.5rem; margin-top:0.5rem">
+        <button id="btn-summary" class="btn hidden" style="flex:1">Full Export</button>
+        <button id="btn-stats" class="btn hidden" style="flex:1">Stats Export</button>
+      </div>
       <div id="summarybox"></div>
     </aside>
     <main>
@@ -323,7 +326,7 @@ const $ = (s) => document.querySelector(s);
 
 let state = { phase: "setup", players: [], nights: [], votes: {} };
 let lastFocusKey = null;
-let summaryOpen = false;
+let summaryOpen = null; // null | "full" | "stats"
 
 // --- tiny DOM helper (no innerHTML anywhere) ---
 function h(tag, attrs = {}, ...kids) {
@@ -560,6 +563,19 @@ function summaryText(t) {
   }
   sections.push(timeline);
   return sections.map((s) => s.join("\n")).join("\n\n");
+}
+
+// Stats-logger format: roll-order name list (position encodes role),
+// N0 deaths, winner.
+function statsText(t) {
+  const died = t.deaths[0] ? [...t.deaths[0]].sort() : [];
+  return [
+    ...state.players.map((p) => p.name),
+    "",
+    `N0: ${died.length ? died.join(", ") : "none"}`,
+    "",
+    `${winnerAt(t.dead)} Win`,
+  ].join("\n");
 }
 
 // Nudge, not a block: lists actions a live actor hasn't recorded yet.
@@ -803,13 +819,13 @@ function renderPlay(keepId) {
   $("#winbox").replaceChildren(winner
     ? h("div", { class: "winbanner " + winner }, `${winner.toUpperCase()} WINS`)
     : "");
-  if (!winner) summaryOpen = false;
-  const sumBtn = $("#btn-summary");
-  sumBtn.classList.toggle("hidden", !winner);
-  sumBtn.textContent = summaryOpen ? "Hide Summary" : "Game Summary";
+  if (!winner) summaryOpen = null;
+  $("#btn-summary").classList.toggle("hidden", !winner);
+  $("#btn-stats").classList.toggle("hidden", !winner);
   $("#summarybox").replaceChildren(...(winner && summaryOpen
     ? [h("div", { class: "card", style: "margin-top:0.5rem" },
-        pasteBlock("discord", summaryText(t), "summary-pre"))]
+        pasteBlock(summaryOpen,
+          summaryOpen === "full" ? summaryText(t) : statsText(t), "summary-pre"))]
     : []));
 
   $("#stats").classList.remove("hidden");
@@ -918,7 +934,12 @@ $("#btn-next").addEventListener("click", () => {
 });
 
 $("#btn-summary").addEventListener("click", () => {
-  summaryOpen = !summaryOpen;
+  summaryOpen = summaryOpen === "full" ? null : "full";
+  renderPlay();
+});
+
+$("#btn-stats").addEventListener("click", () => {
+  summaryOpen = summaryOpen === "stats" ? null : "stats";
   renderPlay();
 });
 
@@ -927,9 +948,10 @@ $("#btn-newgame").addEventListener("click", () => {
   localStorage.removeItem(STORE);
   state = { phase: "setup", players: [], nights: [], votes: {} };
   pendingDeal = null;
-  summaryOpen = false;
+  summaryOpen = null;
   $("#summarybox").replaceChildren();
   $("#btn-summary").classList.add("hidden");
+  $("#btn-stats").classList.add("hidden");
   $("#names").value = "";
   $("#namecount").textContent = "0/15 names";
   $("#nameerr").classList.add("hidden");
