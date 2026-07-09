@@ -507,12 +507,12 @@ function copResult(nd) {
 }
 
 function nightText(nd, t) {
-  const lines = [`**Night ${nd.night}**`];
+  const lines = [];
   if (nd.night >= 1 && !winnerAt(t.beforeDay[nd.night])) {
     const v = state.votes[nd.night];
-    lines.push(`Day ${nd.night}: ${v ? `lynched ${v}` : "no lynch"}`,
-      "==== Night Actions ====");
+    lines.push(`=== Day ${nd.night} ===`, v ? `lynched ${v}` : "no lynch");
   }
+  lines.push(`=== Night ${nd.night} Actions ===`);
   const kills = [...new Set(nd.kills.filter(Boolean))];
   if (kills.length) lines.push(`mafia: ||killed ${kills.join(", ")}||`);
   if (nd.cop) {
