@@ -204,6 +204,27 @@ ol.roster li.ghostrow .name { color: var(--ghost); font-style: italic; }
 .btn-copy:hover { color: var(--accent); border-color: var(--accent); }
 .btn-copy.done { color: var(--good); border-color: var(--good); }
 
+.stats {
+  display: flex;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--accent);
+  padding: 0.5rem 1.1rem;
+  margin-bottom: 1rem;
+}
+.stat { display: flex; flex-direction: column; align-items: center; }
+.stat-label {
+  font-size: 0.68rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.stat-val { font-family: var(--serif); font-size: 1.25rem; color: var(--accent); }
+.stat-val.town { color: var(--town); }
+.stat-val.maf { color: var(--maf); }
+
 .winbanner {
   font-family: var(--serif);
   text-align: center;
@@ -264,6 +285,13 @@ ol.roster li.ghostrow .name { color: var(--ghost); font-style: italic; }
       <button id="btn-newgame" class="btn" style="width:100%">New Game</button>
     </aside>
     <main>
+      <div class="stats">
+        <div class="stat"><span class="stat-label">Town</span><span class="stat-val town" id="st-town">–</span></div>
+        <div class="stat"><span class="stat-label">Mafia</span><span class="stat-val maf" id="st-maf">–</span></div>
+        <div class="stat"><span class="stat-label">Alive</span><span class="stat-val" id="st-total">–</span></div>
+        <div class="stat"><span class="stat-label">Day</span><span class="stat-val" id="st-day">–</span></div>
+        <div class="stat"><span class="stat-label">To lynch</span><span class="stat-val" id="st-maj">–</span></div>
+      </div>
       <div id="log"></div>
       <div class="row">
         <button id="btn-next" class="btn primary"></button>
@@ -671,6 +699,16 @@ function renderPlay(keepId) {
   $("#winbox").replaceChildren(winner
     ? h("div", { class: "winbanner " + winner }, `${winner.toUpperCase()} WINS`)
     : "");
+
+  const aliveNow = state.players.filter((p) => !p.ghost && !t.dead.has(p.name));
+  const mafNow = aliveNow.filter((p) => alignOf(p) === "Mafia").length;
+  const totalNow = aliveNow.length;
+  $("#st-town").textContent = totalNow - mafNow;
+  $("#st-maf").textContent = mafNow;
+  $("#st-total").textContent = totalNow;
+  $("#st-day").textContent = state.nights.length
+    ? Math.max(1, state.nights[state.nights.length - 1].night) : 1;
+  $("#st-maj").textContent = Math.floor(totalNow / 2) + 1;
 
   const log = $("#log");
   const sync = (id, build) => {
