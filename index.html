@@ -551,17 +551,16 @@ function summaryText(t) {
       `Medic: ${special(5).name}`,
       `Vigi: ${special(6).name}`],
   ];
-  const timeline = [];
+  // One block per phase in the same format as the nightly discord outputs.
   for (const nd of state.nights) {
-    if (nd.night >= 1 && !winnerAt(t.beforeDay[nd.night])) {
+    if (winnerAt(t.beforeDay[nd.night])) continue;
+    if (winnerAt(t.beforeNight[nd.night])) {
       const v = state.votes[nd.night];
-      timeline.push(`D${nd.night}: ${v ? `lynched ${v}` : "no lynch"}`);
+      sections.push([`=== Day ${nd.night} ===`, v ? `lynched ${v}` : "no lynch"]);
+    } else {
+      sections.push([nightText(nd, t)]);
     }
-    if (winnerAt(t.beforeNight[nd.night])) continue;
-    const died = [...t.deaths[nd.night]].sort();
-    timeline.push(`N${nd.night}: ${died.length ? `${died.join(", ")} died` : "no one died"}`);
   }
-  sections.push(timeline);
   return sections.map((s) => s.join("\n")).join("\n\n");
 }
 
