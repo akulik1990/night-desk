@@ -62,6 +62,14 @@ h2 {
   margin-bottom: 0.6rem;
 }
 h3 { font-family: var(--serif); font-size: 1rem; margin-bottom: 0.4rem; }
+.inc {
+  font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 0.72rem;
+  font-weight: normal;
+  font-style: italic;
+  color: var(--accent);
+  margin-left: 0.6rem;
+}
 
 .card {
   background: var(--panel);
@@ -120,6 +128,8 @@ ol.roster .pos {
   text-align: right;
 }
 ol.roster .name { flex: 1; }
+ol.roster li:not(.ghostrow) .name { cursor: pointer; }
+ol.roster li:not(.ghostrow) .name:hover { color: var(--accent); }
 ol.roster li.dead .name { text-decoration: line-through; color: var(--muted); }
 ol.roster li.dead .name::after { content: " \2020"; color: var(--maf); text-decoration: none; }
 ol.roster li.ghostrow .name { color: var(--ghost); font-style: italic; }
@@ -513,6 +523,78 @@ function deathText(nd, t) {
   return `Night ${nd.night} — ` + (d.length ? `${d.join(", ")} died.` : "no one died.");
 }
 
+// Post-game recap: roles plus per-day/night actions, no spoiler tags —
+// the game is over, this goes to the public channel.
+function summaryText(t) {
+  const mafia = state.players.filter((p) => p.pos <= 3).map((p) => p.name).join(", ");
+  const lines = [
+    `**${winnerAt(t.dead).toUpperCase()} WINS**`,
+    `Mafia: ${mafia} · Cop: ${special(4).name} · Medic: ${special(5).name} · Vigi: ${special(6).name}`,
+    "",
+  ];
+  for (const nd of state.nights) {
+    if (nd.night >= 1 && !winnerAt(t.beforeDay[nd.night])) {
+      const v = state.votes[nd.night];
+      lines.push(`D${nd.night}: ${v ? "lynched " + v : "no lynch"}`);
+    }
+    if (winnerAt(t.beforeNight[nd.night])) continue;
+    const parts = [];
+    const kills = [...new Set(nd.kills.filter(Boolean))];
+    if (kills.length) parts.push(`killed ${kills.join(", ")}`);
+    if (nd.cop) {
+      const r = copResult(nd);
+      parts.push(`checked ${nd.cop}${r ? ` (${r.verdict} to ${r.to})` : ""}`);
+    }
+    if (nd.medic) parts.push(`saved ${nd.medic}`);
+    if (nd.vigi) parts.push(`shot ${nd.vigi}`);
+    lines.push(`N${nd.night}: ${parts.length ? parts.join("; ") : "quiet night"}`);
+  }
+  return lines.join("\n");
+}
+
+// Nudge, not a block: lists actions a live actor hasn't recorded yet.
+// Vigi is excluded — holster is the default and a valid choice.
+function incText(nd, t) {
+  const before = t.beforeNight[nd.night];
+  if (winnerAt(before)) return "";
+  const aliveReal = state.players.filter((p) => !p.ghost && !before.has(p.name));
+  const mafiaAlive = aliveReal.filter((p) => alignOf(p) === "Mafia").length;
+  const actorOk = (pos) => {
+    const p = special(pos);
+    return !p.ghost && !before.has(p.name);
+  };
+  const missing = [];
+  if (!nd.kills[0]) missing.push("kill");
+  if (mafiaAlive === 3 && !nd.kills[1]) missing.push("kill 2");
+  if (actorOk(4) && !nd.cop) missing.push("cop");
+  if (actorOk(5) && !nd.medic) missing.push("medic");
+  if (nd.rng[0] == null || nd.rng[1] == null) missing.push("formals");
+  return missing.length ? `missing: ${missing.join(", ")}` : "";
+}
+
+function renamePlayer(p) {
+  const cur = p.name;
+  const input = prompt(`Rename ${cur}:`, cur);
+  if (input == null) return;
+  const n = input.trim();
+  if (!n || n === cur) return;
+  if (n.toLowerCase() === GHOST.toLowerCase() ||
+      state.players.some((x) => x !== p && x.name.toLowerCase() === n.toLowerCase())) {
+    alert(`"${n}" is already taken.`);
+    return;
+  }
+  p.name = n;
+  for (const nd of state.nights) {
+    nd.kills = nd.kills.map((k) => (k === cur ? n : k));
+    if (nd.cop === cur) nd.cop = n;
+    if (nd.medic === cur) nd.medic = n;
+    if (nd.vigi === cur) nd.vigi = n;
+  }
+  for (const d of Object.keys(state.votes))
+    if (state.votes[d] === cur) state.votes[d] = n;
+  renderPlay();
+}
+
 // --- rendering ---
 function tagFor(p) {
   const role = roleOf(p);
@@ -563,12 +645,13 @@ function renderRoster(dead) {
     ol.replaceChildren(...state.players.map((p) =>
       h("li", {},
         h("span", { class: "pos" }, String(p.pos)),
-        h("span", { class: "name" }, p.name),
+        h("span", { class: "name", onclick: () => { if (!p.ghost) renamePlayer(p); } }, p.name),
         tagFor(p))));
   }
   state.players.forEach((p, i) => {
     ol.children[i].className =
       (dead.has(p.name) ? "dead " : "") + (p.ghost ? "ghostrow" : "");
+    ol.children[i].querySelector(".name").textContent = p.name;
   });
 }
 
@@ -591,7 +674,9 @@ function buildRngKids(nd) {
 }
 
 function renderNight(nd, t) {
-  const card = h("div", { class: "card", id: `night-${nd.night}` }, h("h3", {}, `Night ${nd.night}`));
+  const card = h("div", { class: "card", id: `night-${nd.night}` },
+    h("h3", {}, `Night ${nd.night}`,
+      h("span", { class: "inc", id: `inc-${nd.night}` }, incText(nd, t))));
   const before = t.beforeNight[nd.night];
 
   if (winnerAt(before)) {
@@ -660,6 +745,7 @@ function patchNight(nd, t) {
   };
   set(`out-${nd.night}`, nightText(nd, t));
   set(`deaths-${nd.night}`, deathText(nd, t));
+  set(`inc-${nd.night}`, incText(nd, t));
   const badge = document.getElementById(`copbadge-${nd.night}`);
   if (badge) {
     const r = copResult(nd);
@@ -697,9 +783,11 @@ function renderPlay(keepId) {
   $("#reveal-pre").textContent = revealText();
 
   const winner = winnerAt(t.dead);
-  $("#winbox").replaceChildren(winner
-    ? h("div", { class: "winbanner " + winner }, `${winner.toUpperCase()} WINS`)
-    : "");
+  $("#winbox").replaceChildren(...(winner
+    ? [h("div", { class: "winbanner " + winner }, `${winner.toUpperCase()} WINS`),
+       h("div", { class: "card" }, h("h2", {}, "Game Summary"),
+         pasteBlock("discord", summaryText(t), "summary-pre"))]
+    : []));
 
   $("#stats").classList.remove("hidden");
   const aliveNow = state.players.filter((p) => !p.ghost && !t.dead.has(p.name));
