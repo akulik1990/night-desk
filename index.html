@@ -33,12 +33,17 @@ body {
 .wrap { max-width: 1100px; margin: 0 auto; padding: 1.25rem; }
 
 header.masthead {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--ink);
   border-bottom: 3px double var(--line);
   padding: 0.75rem 0 0.6rem;
   margin-bottom: 1.25rem;
   display: flex;
   align-items: baseline;
   gap: 0.75rem;
+  flex-wrap: wrap;
 }
 header.masthead h1 {
   font-family: var(--serif);
@@ -206,22 +211,18 @@ ol.roster li.ghostrow .name { color: var(--ghost); font-style: italic; }
 
 .stats {
   display: flex;
-  gap: 1.5rem;
-  flex-wrap: wrap;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-left: 3px solid var(--accent);
-  padding: 0.5rem 1.1rem;
-  margin-bottom: 1rem;
+  gap: 1.1rem;
+  margin-left: auto;
+  align-self: center;
 }
-.stat { display: flex; flex-direction: column; align-items: center; }
+.stat { display: flex; flex-direction: column; align-items: center; line-height: 1.2; }
 .stat-label {
-  font-size: 0.68rem;
+  font-size: 0.6rem;
   color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
-.stat-val { font-family: var(--serif); font-size: 1.25rem; color: var(--accent); }
+.stat-val { font-family: var(--serif); font-size: 1.05rem; color: var(--accent); }
 .stat-val.town { color: var(--town); }
 .stat-val.maf { color: var(--maf); }
 
@@ -246,6 +247,13 @@ ol.roster li.ghostrow .name { color: var(--ghost); font-style: italic; }
   <header class="masthead">
     <h1>Night Desk</h1>
     <span class="sub">mafia moderator console</span>
+    <div class="stats hidden" id="stats">
+      <div class="stat"><span class="stat-label">Town</span><span class="stat-val town" id="st-town">–</span></div>
+      <div class="stat"><span class="stat-label">Mafia</span><span class="stat-val maf" id="st-maf">–</span></div>
+      <div class="stat"><span class="stat-label">Alive</span><span class="stat-val" id="st-total">–</span></div>
+      <div class="stat"><span class="stat-label">Day</span><span class="stat-val" id="st-day">–</span></div>
+      <div class="stat"><span class="stat-label">To lynch</span><span class="stat-val" id="st-maj">–</span></div>
+    </div>
   </header>
 
   <section id="setup">
@@ -285,13 +293,6 @@ ol.roster li.ghostrow .name { color: var(--ghost); font-style: italic; }
       <button id="btn-newgame" class="btn" style="width:100%">New Game</button>
     </aside>
     <main>
-      <div class="stats">
-        <div class="stat"><span class="stat-label">Town</span><span class="stat-val town" id="st-town">–</span></div>
-        <div class="stat"><span class="stat-label">Mafia</span><span class="stat-val maf" id="st-maf">–</span></div>
-        <div class="stat"><span class="stat-label">Alive</span><span class="stat-val" id="st-total">–</span></div>
-        <div class="stat"><span class="stat-label">Day</span><span class="stat-val" id="st-day">–</span></div>
-        <div class="stat"><span class="stat-label">To lynch</span><span class="stat-val" id="st-maj">–</span></div>
-      </div>
       <div id="log"></div>
       <div class="row">
         <button id="btn-next" class="btn primary"></button>
@@ -700,6 +701,7 @@ function renderPlay(keepId) {
     ? h("div", { class: "winbanner " + winner }, `${winner.toUpperCase()} WINS`)
     : "");
 
+  $("#stats").classList.remove("hidden");
   const aliveNow = state.players.filter((p) => !p.ghost && !t.dead.has(p.name));
   const mafNow = aliveNow.filter((p) => alignOf(p) === "Mafia").length;
   const totalNow = aliveNow.length;
@@ -806,6 +808,7 @@ $("#btn-newgame").addEventListener("click", () => {
   $("#log").replaceChildren();
   $("#winbox").replaceChildren();
   $("#play").classList.add("hidden");
+  $("#stats").classList.add("hidden");
   $("#setup").classList.remove("hidden");
   window.scrollTo(0, 0);
 });
