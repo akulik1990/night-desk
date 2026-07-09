@@ -133,7 +133,7 @@ ol.roster .name { flex: 1; }
 ol.roster li:not(.ghostrow) .name { cursor: pointer; }
 ol.roster li:not(.ghostrow) .name:hover { color: var(--accent); }
 ol.roster li.dead .name { text-decoration: line-through; color: var(--muted); }
-ol.roster li.dead .name::after { content: " \2020"; color: var(--maf); text-decoration: none; }
+ol.roster .died { color: var(--maf); font-size: 0.72rem; font-family: var(--serif); white-space: nowrap; }
 ol.roster li.ghostrow .name { color: var(--ghost); font-style: italic; }
 
 .tag {
@@ -578,7 +578,6 @@ function incText(nd, t) {
   if (mafiaAlive === 3 && !nd.kills[1]) missing.push("kill 2");
   if (actorOk(4) && !nd.cop) missing.push("cop");
   if (actorOk(5) && !nd.medic) missing.push("medic");
-  if (nd.rng[0] == null || nd.rng[1] == null) missing.push("formals");
   return missing.length ? `missing: ${missing.join(", ")}` : "";
 }
 
@@ -649,19 +648,21 @@ function pasteBlock(label, text, preId) {
 
 // Build the roster once, then only toggle classes — destroying nodes above
 // the scroll position makes the preview panel lose its scroll anchor.
-function renderRoster(dead) {
+function renderRoster(dead, marks) {
   const ol = $("#roster");
   if (ol.children.length !== state.players.length) {
     ol.replaceChildren(...state.players.map((p) =>
       h("li", {},
         h("span", { class: "pos" }, String(p.pos)),
         h("span", { class: "name", onclick: () => { if (!p.ghost) renamePlayer(p); } }, p.name),
+        h("span", { class: "died" }),
         tagFor(p))));
   }
   state.players.forEach((p, i) => {
     ol.children[i].className =
       (dead.has(p.name) ? "dead " : "") + (p.ghost ? "ghostrow" : "");
     ol.children[i].querySelector(".name").textContent = p.name;
+    ol.children[i].querySelector(".died").textContent = marks.get(p.name) || "";
   });
 }
 
@@ -738,8 +739,10 @@ function renderNight(nd, t) {
   });
 
   // RNG formals for the next day: slot 1 weighted 2/3 for a 1, slot 2 a coin flip.
-  card.appendChild(fieldRow(`Formals (Day ${nd.night + 1})`,
-    h("div", { class: "rngrow", id: `rng-${nd.night}` }, buildRngKids(nd))));
+  // Day 1 has no formals, so N0 rolls nothing.
+  if (nd.night >= 1)
+    card.appendChild(fieldRow(`Formals (Day ${nd.night + 1})`,
+      h("div", { class: "rngrow", id: `rng-${nd.night}` }, buildRngKids(nd))));
 
   card.appendChild(pasteBlock(`Night ${nd.night} — discord`, nightText(nd, t), `out-${nd.night}`));
   card.appendChild(pasteBlock("deaths (mod only)", deathText(nd, t), `deaths-${nd.night}`));
@@ -789,7 +792,11 @@ function renderPlay(keepId) {
   const y = window.scrollY;
   const t = fixState();
 
-  renderRoster(t.dead);
+  const marks = new Map();
+  for (const [d, v] of Object.entries(state.votes)) if (v) marks.set(v, `†D${d}`);
+  for (const [n, deaths] of Object.entries(t.deaths))
+    for (const name of deaths) marks.set(name, `†N${n}`);
+  renderRoster(t.dead, marks);
   $("#reveal-pre").textContent = revealText();
 
   const winner = winnerAt(t.dead);
