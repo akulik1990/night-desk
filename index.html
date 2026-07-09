@@ -303,6 +303,8 @@ ol.roster li.ghostrow .name { color: var(--ghost); font-style: italic; }
         </div>
       </div>
       <button id="btn-newgame" class="btn" style="width:100%">New Game</button>
+      <button id="btn-summary" class="btn hidden" style="width:100%; margin-top:0.5rem">Game Summary</button>
+      <div id="summarybox"></div>
     </aside>
     <main>
       <div id="log"></div>
@@ -321,6 +323,7 @@ const $ = (s) => document.querySelector(s);
 
 let state = { phase: "setup", players: [], nights: [], votes: {} };
 let lastFocusKey = null;
+let summaryOpen = false;
 
 // --- tiny DOM helper (no innerHTML anywhere) ---
 function h(tag, attrs = {}, ...kids) {
@@ -791,10 +794,16 @@ function renderPlay(keepId) {
   $("#reveal-pre").textContent = revealText();
 
   const winner = winnerAt(t.dead);
-  $("#winbox").replaceChildren(...(winner
-    ? [h("div", { class: "winbanner " + winner }, `${winner.toUpperCase()} WINS`),
-       h("div", { class: "card" }, h("h2", {}, "Game Summary"),
-         pasteBlock("discord", summaryText(t), "summary-pre"))]
+  $("#winbox").replaceChildren(winner
+    ? h("div", { class: "winbanner " + winner }, `${winner.toUpperCase()} WINS`)
+    : "");
+  if (!winner) summaryOpen = false;
+  const sumBtn = $("#btn-summary");
+  sumBtn.classList.toggle("hidden", !winner);
+  sumBtn.textContent = summaryOpen ? "Hide Summary" : "Game Summary";
+  $("#summarybox").replaceChildren(...(winner && summaryOpen
+    ? [h("div", { class: "card", style: "margin-top:0.5rem" },
+        pasteBlock("discord", summaryText(t), "summary-pre"))]
     : []));
 
   $("#stats").classList.remove("hidden");
@@ -902,11 +911,19 @@ $("#btn-next").addEventListener("click", () => {
   renderPlay();
 });
 
+$("#btn-summary").addEventListener("click", () => {
+  summaryOpen = !summaryOpen;
+  renderPlay();
+});
+
 $("#btn-newgame").addEventListener("click", () => {
   if (!confirm("Start a new game? The current one is discarded.")) return;
   localStorage.removeItem(STORE);
   state = { phase: "setup", players: [], nights: [], votes: {} };
   pendingDeal = null;
+  summaryOpen = false;
+  $("#summarybox").replaceChildren();
+  $("#btn-summary").classList.add("hidden");
   $("#names").value = "";
   $("#namecount").textContent = "0/15 names";
   $("#nameerr").classList.add("hidden");
