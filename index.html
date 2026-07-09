@@ -501,8 +501,7 @@ function mkSelect(options, current, placeholder, onchange, key) {
   return sel;
 }
 
-function copyBtn(getText) {
-  const b = h("button", { class: "btn-copy" }, "Copy");
+function wireCopy(b, getText) {
   b.addEventListener("click", () => {
     navigator.clipboard.writeText(getText()).then(() => {
       b.textContent = "Copied";
@@ -510,8 +509,15 @@ function copyBtn(getText) {
       setTimeout(() => { b.textContent = "Copy"; b.classList.remove("done"); }, 1500);
     });
   });
+}
+
+function copyBtn(getText) {
+  const b = h("button", { class: "btn-copy" }, "Copy");
+  wireCopy(b, getText);
   return b;
 }
+
+wireCopy($('[data-copy="reveal-pre"]'), () => $("#reveal-pre").textContent);
 
 function pasteBlock(label, text, preId) {
   return h("div", { class: "paste" },
