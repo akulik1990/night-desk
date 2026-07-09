@@ -535,36 +535,30 @@ function deathText(nd, t) {
 
 // Post-game recap: roles plus per-day/night actions, no spoiler tags —
 // the game is over, this goes to the public channel.
+// Recap: player list, reveal, then the public death timeline
+// (day lynches and resolved night kills — no private actions).
 function summaryText(t) {
   const mafia = state.players.filter((p) => p.pos <= 3).map((p) => p.name).join(", ");
   const sections = [
     [`**${winnerAt(t.dead).toUpperCase()} WINS**`],
-    ["**Roles**",
+    ["**Players**", ...state.players.map((p) => `${p.pos}. ${p.name}`)],
+    ["**Reveal**",
       `Mafia: ${mafia}`,
       `Cop: ${special(4).name}`,
       `Medic: ${special(5).name}`,
       `Vigi: ${special(6).name}`],
   ];
+  const timeline = [];
   for (const nd of state.nights) {
     if (nd.night >= 1 && !winnerAt(t.beforeDay[nd.night])) {
       const v = state.votes[nd.night];
-      sections.push([`**Day ${nd.night}**`, v ? `Lynched ${v}` : "No lynch"]);
+      timeline.push(`D${nd.night}: ${v ? `lynched ${v}` : "no lynch"}`);
     }
     if (winnerAt(t.beforeNight[nd.night])) continue;
-    const s = [`**Night ${nd.night}**`];
-    const kills = [...new Set(nd.kills.filter(Boolean))];
-    if (kills.length) s.push(`Mafia killed ${kills.join(", ")}`);
-    if (nd.cop) {
-      const r = copResult(nd);
-      s.push(`Cop checked ${nd.cop}${r ? ` — ${r.verdict} to ${r.to}` : ""}`);
-    }
-    if (nd.medic) s.push(`Medic saved ${nd.medic}`);
-    if (nd.vigi) s.push(`Vigi shot ${nd.vigi}`);
-    if (s.length === 1) s.push("No actions");
     const died = [...t.deaths[nd.night]].sort();
-    s.push(`Died: ${died.length ? died.join(", ") : "no one"}`);
-    sections.push(s);
+    timeline.push(`N${nd.night}: ${died.length ? `${died.join(", ")} died` : "no one died"}`);
   }
+  sections.push(timeline);
   return sections.map((s) => s.join("\n")).join("\n\n");
 }
 
