@@ -542,8 +542,9 @@ function deathText(nd, t) {
 // (day lynches and resolved night kills — no private actions).
 function summaryText(t) {
   const mafia = state.players.filter((p) => p.pos <= 3).map((p) => p.name).join(", ");
+  const winner = winnerAt(t.dead);
   const sections = [
-    [`**${winnerAt(t.dead).toUpperCase()} WINS**`],
+    [winner ? `**${winner.toUpperCase()} WINS**` : "**GAME IN PROGRESS**"],
     ["**Players**", ...state.players.map((p) => `${p.pos}. ${p.name}`)],
     ["**Reveal**",
       `Mafia: ${mafia}`,
@@ -568,12 +569,13 @@ function summaryText(t) {
 // N0 deaths, winner.
 function statsText(t) {
   const died = t.deaths[0] ? [...t.deaths[0]].sort() : [];
+  const winner = winnerAt(t.dead);
   return [
     ...state.players.map((p) => p.name),
     "",
     `N0: ${died.length ? died.join(", ") : "none"}`,
     "",
-    `${winnerAt(t.dead)} Win`,
+    winner ? `${winner} Win` : "? Win",
   ].join("\n");
 }
 
@@ -818,12 +820,11 @@ function renderPlay(keepId) {
   $("#winbox").replaceChildren(winner
     ? h("div", { class: "winbanner " + winner }, `${winner.toUpperCase()} WINS`)
     : "");
-  if (!winner) summaryOpen = null;
-  $("#btn-summary").classList.toggle("hidden", !winner);
-  $("#btn-stats").classList.toggle("hidden", !winner);
-  // An open export needs the sidebar space; the roster is done its job by then.
+  $("#btn-summary").classList.remove("hidden");
+  $("#btn-stats").classList.remove("hidden");
+  // An open export needs the sidebar space; hide the roster while it's shown.
   $("#rostercard").classList.toggle("hidden", !!summaryOpen);
-  $("#summarybox").replaceChildren(...(winner && summaryOpen
+  $("#summarybox").replaceChildren(...(summaryOpen
     ? [h("div", { class: "card", style: "margin-top:0.5rem" },
         pasteBlock(summaryOpen,
           summaryOpen === "full" ? summaryText(t) : statsText(t), "summary-pre"))]
