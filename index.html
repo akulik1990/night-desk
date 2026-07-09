@@ -291,7 +291,7 @@ ol.roster li.ghostrow .name { color: var(--ghost); font-style: italic; }
   <section id="play" class="cols hidden">
     <aside>
       <div id="winbox"></div>
-      <div class="card">
+      <div class="card" id="rostercard">
         <h2>Roster</h2>
         <ol id="roster" class="roster"></ol>
       </div>
@@ -821,6 +821,8 @@ function renderPlay(keepId) {
   if (!winner) summaryOpen = null;
   $("#btn-summary").classList.toggle("hidden", !winner);
   $("#btn-stats").classList.toggle("hidden", !winner);
+  // An open export needs the sidebar space; the roster is done its job by then.
+  $("#rostercard").classList.toggle("hidden", !!summaryOpen);
   $("#summarybox").replaceChildren(...(winner && summaryOpen
     ? [h("div", { class: "card", style: "margin-top:0.5rem" },
         pasteBlock(summaryOpen,
