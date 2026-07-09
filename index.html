@@ -70,6 +70,8 @@ h3 { font-family: var(--serif); font-size: 1rem; margin-bottom: 0.4rem; }
   color: var(--accent);
   margin-left: 0.6rem;
 }
+.card.bad { border-left-color: var(--maf); }
+.card.bad .inc { color: var(--maf); font-weight: 600; }
 
 .card {
   background: var(--panel);
@@ -877,6 +879,18 @@ $("#btn-accept").addEventListener("click", () => {
 });
 
 $("#btn-next").addEventListener("click", () => {
+  // Hard gate: no next day until every open night is fully recorded.
+  const t = fixState();
+  const problems = state.nights
+    .map((nd) => ({ night: nd.night, miss: incText(nd, t) }))
+    .filter((x) => x.miss);
+  if (problems.length) {
+    for (const x of problems)
+      document.getElementById(`night-${x.night}`)?.classList.add("bad");
+    alert("Finish recording first:\n" +
+      problems.map((x) => `Night ${x.night} — ${x.miss}`).join("\n"));
+    return;
+  }
   const next = state.nights.length ? state.nights[state.nights.length - 1].night + 1 : 0;
   state.nights.push({ night: next, kills: ["", ""], cop: "", medic: "", vigi: "", rng: [null, null] });
   renderPlay();
