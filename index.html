@@ -527,7 +527,7 @@ function nightText(nd, t) {
   const vigiActive = !vigi.ghost && !t.beforeNight[nd.night].has(vigi.name) && !vigiUsedBefore(nd.night);
   if (nd.vigi) lines.push(`vigi: ||shot ${nd.vigi}||`);
   else if (vigiActive) lines.push(`vigi: ||holstered||`);
-  if (nd.rng[0] != null && nd.rng[1] != null) lines.push(`rngs: ${nd.rng[0] + nd.rng[1]}`);
+  if (nd.rng[0] != null && nd.rng[1] != null) lines.push(`D${nd.night + 1} rngs: ${nd.rng[0] + nd.rng[1]}`);
   return lines.join("\n");
 }
 
@@ -756,10 +756,9 @@ function renderNight(nd, t) {
   });
 
   // RNG formals for the next day: slot 1 weighted 2/3 for a 1, slot 2 a coin flip.
-  // Day 1 has no formals, so N0 rolls nothing.
-  if (nd.night >= 1)
-    card.appendChild(fieldRow(`Formals (Day ${nd.night + 1})`,
-      h("div", { class: "rngrow", id: `rng-${nd.night}` }, buildRngKids(nd))));
+  // Night N rolls the formals for Day N+1, so N0 rolls Day 1's.
+  card.appendChild(fieldRow(`Formals (Day ${nd.night + 1})`,
+    h("div", { class: "rngrow", id: `rng-${nd.night}` }, buildRngKids(nd))));
 
   card.appendChild(pasteBlock(`Night ${nd.night} — discord`, nightText(nd, t), `out-${nd.night}`));
   card.appendChild(pasteBlock("deaths (mod only)", deathText(nd, t), `deaths-${nd.night}`));
