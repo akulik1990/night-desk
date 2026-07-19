@@ -396,6 +396,12 @@ const roleOf = (p) =>
 const alignOf = (p) => (p.pos <= 3 ? "Mafia" : "Town");
 const byName = (name) => state.players.find((p) => p.name === name);
 const special = (pos) => state.players.find((p) => p.pos === pos);
+const ghostCount = () => state.players.filter((p) => p.ghost).length;
+// N0: the mafia's 2 KP are spent on the ghost seats first; only leftover KP
+// hit real players. 2 ghosts => 0 real kills (+ no medic), 1 => 1, 0 => 2.
+const n0Kp = () => Math.max(0, 2 - ghostCount());
+const killPoints = (nd, mafiaAlive) =>
+  nd.night === 0 ? n0Kp() : mafiaAlive === 3 ? 2 : 1;
 
 // --- game timeline ---
 // Order of events: N0, D1, N1, D2, N2, ...  Votes and night deaths accumulate.
@@ -428,6 +434,9 @@ function timeline() {
     const nd = state.nights.find((x) => x.night === n);
     if (nd && !winnerAt(beforeNight[n])) {
       deaths[n] = resolveNight(nd, beforeNight[n]);
+      // The ghost seats are the N0 deaths that absorb the mafia's spare KP.
+      if (n === 0)
+        deaths[n] = [...state.players.filter((p) => p.ghost).map((p) => p.name), ...deaths[n]];
       deaths[n].forEach((d) => dead.add(d));
     } else {
       deaths[n] = [];
@@ -467,14 +476,18 @@ function fixState() {
         return !actorPos || special(actorPos).name !== name;
       };
       const mafiaAlive = aliveReal(before).filter((p) => alignOf(p) === "Mafia").length;
+      const kp = killPoints(nd, mafiaAlive);
       nd.kills = nd.kills.map((k, i) => {
-        const legal = k && ok.has(k) && alignOf(byName(k)) === "Town" && (i === 0 || mafiaAlive === 3);
+        const legal = k && ok.has(k) && alignOf(byName(k)) === "Town" && i < kp;
         if (k && !legal) changed = true;
         return legal ? k : "";
       });
       const actorOk = (pos) => !special(pos).ghost && !before.has(special(pos).name);
       if (nd.cop && (!actorOk(4) || !legalTarget(nd.cop, 4))) { nd.cop = ""; changed = true; }
-      if (nd.medic && (!actorOk(5) || !legalTarget(nd.medic, 5))) { nd.medic = ""; changed = true; }
+      // No real kill on N0 (all KP absorbed by ghosts) => nothing for the medic to save.
+      if (nd.medic && (!actorOk(5) || !legalTarget(nd.medic, 5) || (nd.night === 0 && kp === 0))) {
+        nd.medic = ""; changed = true;
+      }
       if (nd.vigi && (!actorOk(6) || vigiUsedBefore(nd.night) || !legalTarget(nd.vigi, 6))) {
         nd.vigi = ""; changed = true;
       }
@@ -590,11 +603,12 @@ function incText(nd, t) {
     const p = special(pos);
     return !p.ghost && !before.has(p.name);
   };
+  const kp = killPoints(nd, mafiaAlive);
   const missing = [];
-  if (!nd.kills[0]) missing.push("kill");
-  if (mafiaAlive === 3 && !nd.kills[1]) missing.push("kill 2");
+  if (kp >= 1 && !nd.kills[0]) missing.push("kill");
+  if (kp >= 2 && !nd.kills[1]) missing.push("kill 2");
   if (actorOk(4) && !nd.cop) missing.push("cop");
-  if (actorOk(5) && !nd.medic) missing.push("medic");
+  if (kp >= 1 && actorOk(5) && !nd.medic) missing.push("medic");
   return missing.length ? `missing: ${missing.join(", ")}` : "";
 }
 
@@ -624,7 +638,9 @@ function renamePlayer(p) {
 // --- rendering ---
 function tagFor(p) {
   const role = roleOf(p);
-  if (p.ghost) return h("span", { class: "tag" }, "ghost");
+  // A ghost in a role seat (cop/medic/vigi) names it, so the mod sees that
+  // role is dead this game; a ghost in a town seat is just "ghost".
+  if (p.ghost) return h("span", { class: "tag" }, role === "Town" ? "ghost" : `ghost - ${role.toLowerCase()}`);
   if (role === "Town") return null;
   return h("span", { class: "tag " + role.toLowerCase() }, role);
 }
@@ -720,9 +736,11 @@ function renderNight(nd, t) {
   };
 
   const mafiaAlive = aliveReal.filter((p) => alignOf(p) === "Mafia").length;
-  card.appendChild(fieldRow(mafiaAlive === 3 ? "Mafia kill 1" : "Mafia kill (1 KP)",
-    mkSelect(names((p) => alignOf(p) === "Town"), nd.kills[0], "no kill", set("kills", 0), `n${nd.night}-kill0`)));
-  if (mafiaAlive === 3)
+  const kp = killPoints(nd, mafiaAlive);
+  if (kp >= 1)
+    card.appendChild(fieldRow(kp === 1 ? "Mafia kill (1 KP)" : "Mafia kill 1",
+      mkSelect(names((p) => alignOf(p) === "Town"), nd.kills[0], "no kill", set("kills", 0), `n${nd.night}-kill0`)));
+  if (kp >= 2)
     card.appendChild(fieldRow("Mafia kill 2",
       mkSelect(names((p) => alignOf(p) === "Town"), nd.kills[1], "no kill", set("kills", 1), `n${nd.night}-kill1`)));
 
@@ -745,9 +763,11 @@ function renderNight(nd, t) {
       h("span", { class: "badge" + (r ? " " + r.verdict.toLowerCase() : " hidden"),
         id: `copbadge-${nd.night}` }, r ? r.verdict : "")));
   });
-  roleField(5, "Medic save", () =>
+  roleField(5, "Medic save", () => {
+    if (nd.night === 0 && kp === 0) return; // no real N0 kill to save
     card.appendChild(fieldRow("Medic save",
-      mkSelect(names((p) => p.pos !== 5), nd.medic, "no save", set("medic"), `n${nd.night}-medic`))));
+      mkSelect(names((p) => p.pos !== 5), nd.medic, "no save", set("medic"), `n${nd.night}-medic`)));
+  });
   roleField(6, "Vigilante", () => {
     if (vigiUsedBefore(nd.night)) lockedNote("Vigilante", "shot already spent");
     else
