@@ -52,6 +52,9 @@ header.masthead h1 {
   color: var(--accent);
 }
 header.masthead .sub { color: var(--muted); font-size: 0.85rem; font-style: italic; }
+    .timer-link { position: absolute; top: 12px; right: 14px; color: #8fa3b8; text-decoration: none;
+      font-size: 0.8rem; border: 1px solid #2c3947; padding: 4px 10px; border-radius: 6px; }
+    .timer-link:hover { color: #eee; border-color: #3f5163; }
 
 h2 {
   font-family: var(--serif);
@@ -259,6 +262,8 @@ ol.roster li.ghostrow .name { color: var(--ghost); font-style: italic; }
   <header class="masthead">
     <h1>Night Desk</h1>
     <span class="sub">mafia moderator console</span>
+    <a href="https://akulik1990.github.io/mafia-timers/" target="_blank" rel="noopener" class="timer-link"
+       onclick="window.open('https://akulik1990.github.io/mafia-timers/','mafiatimers','width=600,height=340');return false;">⏱ Timer</a>
     <div class="stats hidden" id="stats">
       <div class="stat"><span class="stat-label">Town</span><span class="stat-val town" id="st-town">–</span></div>
       <div class="stat"><span class="stat-label">Mafia</span><span class="stat-val maf" id="st-maf">–</span></div>
