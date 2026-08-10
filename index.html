@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Night Desk</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap">
+  <header class="masthead">
+    <h1>Night Desk</h1>
+    <span class="sub">mafia moderator console</span>
+    <a href="https://akulik1990.github.io/mafia-timers/" target="_blank" rel="noopener" class="timer-link"
+       onclick="window.open('https://akulik1990.github.io/mafia-timers/','mafiatimers','width=600,height=340');return false;">⏱ Timer</a>
+    <div class="stats hidden" id="stats">
+      <div class="stat"><span class="stat-label">Town</span><span class="stat-val town" id="st-town">–</span></div>
+      <div class="stat"><span class="stat-label">Mafia</span><span class="stat-val maf" id="st-maf">–</span></div>
+      <div class="stat"><span class="stat-label">Alive</span><span class="stat-val" id="st-total">–</span></div>
+      <div class="stat"><span class="stat-label">Day</span><span class="stat-val" id="st-day">–</span></div>
+      <div class="stat"><span class="stat-label">To lynch</span><span class="stat-val" id="st-maj">–</span></div>
+    </div>
+  </header>
+
+  <section id="setup">
+    <div class="card">
+      <h2>Roster</h2>
+      <textarea id="names" rows="8" placeholder="paste the table, 13 to 15 players, commas or line breaks"></textarea>
+      <p id="namecount" class="counter">0 of 15 seats</p>
+      <p id="nameerr" class="error hidden"></p>
+      <div class="row">
+        <button id="btn-rand" class="btn primary">Deal Roles</button>
+      </div>
+    </div>
+    <div id="preview" class="card hidden">
+      <h2>The Deal</h2>
+      <ol id="preview-list" class="roster"></ol>
+      <div class="row">
+        <button id="btn-redeal" class="btn">Re-deal</button>
+        <button id="btn-accept" class="btn primary">Accept &amp; Run Game</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="play" class="cols hidden">
+    <aside>
+      <div id="winbox"></div>
+      <div class="card" id="rostercard">
+        <h2>Roster</h2>
+        <ol id="roster" class="roster"></ol>
+      </div>
+      <div class="card">
+        <h2>Role Reveal</h2>
+        <div class="paste">
+          <div class="head"><span>discord</span><button class="btn-copy" data-copy="reveal-pre">Copy</button></div>
+          <pre id="reveal-pre"></pre>
+        </div>
+      </div>
+      <button id="btn-newgame" class="btn" style="width:100%">New Game</button>
+      <div style="display:flex; gap:0.5rem; margin-top:0.5rem">
+        <button id="btn-summary" class="btn hidden" style="flex:1">Full Export</button>
+        <button id="btn-stats" class="btn hidden" style="flex:1">Stats Export</button>
+      </div>
+      <div id="summarybox"></div>
+    </aside>
+    <main>
+      <div id="log"></div>
+      <div class="row">
+        <button id="btn-next" class="btn primary"></button>
+      </div>
+    </main>
+  </section>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
