@@ -620,11 +620,83 @@ $("#btn-newgame").addEventListener("click", () => {
   window.scrollTo(0, 0);
 });
 
+function setPref(kind, value) {
+  document.documentElement.dataset[kind] = value;
+  localStorage.setItem(`night-desk-${kind}`, value);
+}
+
+for (const kind of ["theme", "font"]) {
+  const sel = $("#" + kind);
+  sel.value = localStorage.getItem(`night-desk-${kind}`) || sel.options[0].value;
+  setPref(kind, sel.value);
+  sel.addEventListener("change", () => setPref(kind, sel.value));
+}
+
+const settings = $(".settings");
+document.addEventListener("click", (e) => {
+  if (settings.open && !settings.contains(e.target)) settings.open = false;
+});
+
 function mastHeight() {
   document.documentElement.style.setProperty("--mast", $("header").offsetHeight + "px");
 }
 addEventListener("resize", mastHeight);
 mastHeight();
+
+function selftest() {
+  let bad = 0;
+  const ok = (cond, what) => { if (!cond) { bad++; console.error("selftest:", what); } };
+
+  for (let players = 13; players <= 15; players++) {
+    const names = Array.from({ length: players }, (_, i) => "P" + i);
+    for (let run = 0; run < 400; run++) {
+      const seats = deal(names);
+      const g = seats.filter((p) => p.ghost);
+      ok(seats.length === 15, "seat count");
+      ok(g.length === 15 - players, "ghost count");
+      ok(!g.some((p) => p.pos <= 3), "ghost dealt into the mafia block");
+      ok(g.filter((p) => p.pos <= 6).length <= 1, "two ghosts in seats 4-6");
+      ok(new Set(seats.filter((p) => !p.ghost).map((p) => p.name)).size === players,
+         "lost or duplicated a name");
+    }
+  }
+
+  const keep = state;
+  state = { phase: "play", players: deal(Array.from({ length: 15 }, (_, i) => "P" + i)),
+            nights: [], votes: {} };
+  const nm = (pos) => special(pos).name;
+  const night = (over) => resolveNight(
+    { night: 1, kills: ["", ""], cop: "", medic: "", vigi: "", ...over }, new Set());
+  ok(night({ kills: [nm(7), ""] }).join() === nm(7), "plain kill");
+  ok(night({ kills: [nm(7), ""], medic: nm(7) }).length === 0, "medic save");
+  ok(night({ kills: [nm(7), nm(7)], medic: nm(7) }).join() === nm(7), "double kill beats one save");
+  ok(night({ kills: [nm(7), ""], vigi: nm(8) }).sort().join() === [nm(7), nm(8)].sort().join(),
+     "vigi adds a kill");
+  ok(night({ medic: nm(8) }).length === 0, "save on an untouched player");
+  state = keep;
+
+  const probe = (kind, vars) => {
+    const was = document.documentElement.dataset[kind];
+    const seen = new Map();
+    for (const opt of $("#" + kind).options) {
+      document.documentElement.dataset[kind] = opt.value;
+      const css = getComputedStyle(document.documentElement);
+      const swatch = vars.map((v) => css.getPropertyValue(v).trim());
+      swatch.forEach((val, i) => ok(val, `${opt.value} is missing ${vars[i]}`));
+      const key = swatch.join("|");
+      ok(!seen.has(key), `${opt.value} is identical to ${seen.get(key)}`);
+      seen.set(key, opt.value);
+    }
+    document.documentElement.dataset[kind] = was;
+  };
+  probe("theme", ["--ink", "--panel", "--panel2", "--line", "--text",
+                  "--muted", "--accent", "--maf", "--town", "--ghost", "--good"]);
+  probe("font", ["--serif", "--sans", "--mono"]);
+
+  console.log(bad ? `selftest: ${bad} failed` : "selftest: clean");
+  return bad === 0;
+}
+if (location.search.includes("selftest")) selftest();
 
 try {
   const saved = JSON.parse(localStorage.getItem(STORE));
