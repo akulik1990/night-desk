@@ -202,9 +202,9 @@ function nightText(nd, t) {
 function copText(nd) {
   if (!nd.cop) return "";
   const r = copResult(nd);
-  return `N${nd.night} cop: ` + (r
+  return r
     ? `${nd.cop} is ${r.verdict === "SAME" ? "same as" : "different from"} ${r.to}`
-    : `${nd.cop}, first check`);
+    : `${nd.cop}, first check`;
 }
 
 function modText(nd, t) {
