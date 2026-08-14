@@ -199,17 +199,17 @@ function nightText(nd, t) {
   return lines.join("\n");
 }
 
+function copText(nd) {
+  if (!nd.cop) return "";
+  const r = copResult(nd);
+  return `N${nd.night} cop: ` + (r
+    ? `${nd.cop} is ${r.verdict === "SAME" ? "same as" : "different from"} ${r.to}`
+    : `${nd.cop}, first check`);
+}
+
 function modText(nd, t) {
-  const lines = [];
-  if (nd.cop) {
-    const r = copResult(nd);
-    lines.push(`N${nd.night} cop: ` + (r
-      ? `${nd.cop} is ${r.verdict === "SAME" ? "same as" : "different from"} ${r.to}`
-      : `${nd.cop}, first check`));
-  }
   const d = [...t.deaths[nd.night]].sort();
-  lines.push(`N${nd.night} down: ` + (d.length ? d.join(", ") : "nobody"));
-  return lines.join("\n");
+  return `N${nd.night} down: ` + (d.length ? d.join(", ") : "nobody");
 }
 
 function summaryText(t) {
@@ -420,6 +420,9 @@ function renderNight(nd, t) {
   card.appendChild(fieldRow(`Formals (Day ${nd.night + 1})`,
     h("div", { class: "rngrow", id: `rng-${nd.night}` }, buildRngKids(nd))));
 
+  const cop = pasteBlock("cop check", copText(nd), `cop-${nd.night}`);
+  cop.classList.toggle("hidden", !nd.cop);
+  card.appendChild(cop);
   card.appendChild(pasteBlock(`Night ${nd.night} — discord`, nightText(nd, t), `out-${nd.night}`));
   card.appendChild(pasteBlock("mod only", modText(nd, t), `mod-${nd.night}`));
   return card;
@@ -430,8 +433,11 @@ function patchNight(nd, t) {
     const el = document.getElementById(id);
     if (el) el.textContent = text;
   };
+  set(`cop-${nd.night}`, copText(nd));
   set(`out-${nd.night}`, nightText(nd, t));
   set(`mod-${nd.night}`, modText(nd, t));
+  const cop = document.getElementById(`cop-${nd.night}`);
+  if (cop) cop.parentElement.classList.toggle("hidden", !nd.cop);
   set(`inc-${nd.night}`, incText(nd, t));
   const badge = document.getElementById(`copbadge-${nd.night}`);
   if (badge) {
