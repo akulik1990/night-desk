@@ -186,7 +186,8 @@ function nightText(nd, t) {
   }
   lines.push(`=== Night ${nd.night} Actions ===`);
   const kills = [...new Set(nd.kills.filter(Boolean))];
-  if (kills.length) lines.push(`mafia: ||killed ${kills.join(", ")}||`);
+  const ds = nd.kills[0] && nd.kills[0] === nd.kills[1] ? " (ds)" : "";
+  if (kills.length) lines.push(`mafia: ||killed ${kills.join(", ")}${ds}||`);
   if (nd.cop) {
     const r = copResult(nd);
     lines.push(r ? `cop: ||check ${nd.cop} - ${r.verdict} to ${r.to}||` : `cop: ||check ${nd.cop}||`);
