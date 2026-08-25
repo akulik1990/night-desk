@@ -101,6 +101,48 @@
   --good: #b4cf8a;
 }
 
+:root[data-theme="fern"] {
+  --ink: #131417;
+  --panel: #1a1c21;
+  --panel2: #23262d;
+  --line: #53652a;
+  --text: #dfe2e6;
+  --muted: #8b9199;
+  --accent: #9fb275;
+  --maf: #d97b6c;
+  --town: #7ea9d1;
+  --ghost: #70757d;
+  --good: #b4cf8a;
+}
+
+:root[data-theme="lichen"] {
+  --ink: #171512;
+  --panel: #201c18;
+  --panel2: #2a2620;
+  --line: #53652a;
+  --text: #eae4d6;
+  --muted: #9a9180;
+  --accent: #9fb275;
+  --maf: #c96a52;
+  --town: #84a7c6;
+  --ghost: #7d766a;
+  --good: #b4cf8a;
+}
+
+:root[data-theme="meadow"] {
+  --ink: #f1efe7;
+  --panel: #faf9f4;
+  --panel2: #e7e4d8;
+  --line: #9fb275;
+  --text: #26231c;
+  --muted: #7a7767;
+  --accent: #53652a;
+  --maf: #b0432f;
+  --town: #33628f;
+  --ghost: #8b8878;
+  --good: #5d7a2c;
+}
+
 :root[data-font="plain"] { --serif: var(--sans); }
 :root[data-font="serif"] { --sans: Georgia, "Times New Roman", serif; }
 :root[data-font="mono"] { --serif: var(--mono); --sans: var(--mono); }
