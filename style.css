@@ -87,6 +87,20 @@
   --good: #98bb6c;
 }
 
+:root[data-theme="moss"] {
+  --ink: #12150c;
+  --panel: #1a1f10;
+  --panel2: #242b16;
+  --line: #53652a;
+  --text: #e6e8d8;
+  --muted: #8a9370;
+  --accent: #9fb275;
+  --maf: #c96a52;
+  --town: #85a8c8;
+  --ghost: #6b7258;
+  --good: #b4cf8a;
+}
+
 :root[data-font="plain"] { --serif: var(--sans); }
 :root[data-font="serif"] { --sans: Georgia, "Times New Roman", serif; }
 :root[data-font="mono"] { --serif: var(--mono); --sans: var(--mono); }
