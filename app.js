@@ -401,15 +401,18 @@ function renderNight(nd, t) {
 
   roleField(4, "Cop check", () => {
     const r = copResult(nd);
+    const seen = new Set(state.nights.filter((x) => x.night < nd.night && x.cop).map((x) => x.cop));
     card.appendChild(fieldRow("Cop check",
-      mkSelect(names((p) => p.pos !== 4), nd.cop, "no check", set("cop"), `n${nd.night}-cop`),
+      mkSelect(names((p) => p.pos !== 4 && !seen.has(p.name)), nd.cop, "no check", set("cop"), `n${nd.night}-cop`),
       h("span", { class: "badge" + (r ? " " + r.verdict.toLowerCase() : " hidden"),
         id: `copbadge-${nd.night}` }, r ? r.verdict : "")));
   });
   roleField(5, "Medic save", () => {
     if (nd.night === 0 && kp === 0) return;
+    const last = state.nights.find((x) => x.night === nd.night - 1);
+    const prev = last && last.medic;
     card.appendChild(fieldRow("Medic save",
-      mkSelect(names((p) => p.pos !== 5), nd.medic, "no save", set("medic"), `n${nd.night}-medic`)));
+      mkSelect(names((p) => p.pos !== 5 && p.name !== prev), nd.medic, "no save", set("medic"), `n${nd.night}-medic`)));
   });
   roleField(6, "Vigi", () => {
     if (vigiUsedBefore(nd.night)) lockedNote("Vigi", "shot already spent");
