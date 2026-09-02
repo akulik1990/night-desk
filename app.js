@@ -495,8 +495,8 @@ function renderPlay(keepId) {
 
   $("#stats").classList.remove("hidden");
   const curN = state.nights.length ? state.nights[state.nights.length - 1].night : 0;
-  const atDay = t.beforeDay[curN] || new Set();
-  const aliveNow = state.players.filter((p) => !p.ghost && !atDay.has(p.name));
+  const atNight = t.beforeNight[curN] || new Set();
+  const aliveNow = state.players.filter((p) => !p.ghost && !atNight.has(p.name));
   const mafNow = aliveNow.filter((p) => alignOf(p) === "Mafia").length;
   const totalNow = aliveNow.length;
   $("#st-town").textContent = totalNow - mafNow;
