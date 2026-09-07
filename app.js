@@ -486,6 +486,7 @@ function renderPlay(keepId) {
     : "");
   $("#btn-summary").classList.remove("hidden");
   $("#btn-stats").classList.remove("hidden");
+  $("#btn-handoff").classList.remove("hidden");
   $("#rostercard").classList.toggle("hidden", !!summaryOpen);
   $("#summarybox").replaceChildren(...(summaryOpen
     ? [h("div", { class: "card", style: "margin-top:0.5rem" },
@@ -609,6 +610,32 @@ $("#btn-stats").addEventListener("click", () => {
   renderPlay();
 });
 
+$("#btn-handoff").addEventListener("click", () => {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(state)], { type: "application/json" }));
+  a.download = "night-desk-game.json";
+  a.click();
+});
+
+$("#btn-import").addEventListener("click", () => $("#importfile").click());
+$("#importfile").addEventListener("change", (e) => {
+  const f = e.target.files[0];
+  e.target.value = "";
+  if (!f) return;
+  f.text().then((txt) => {
+    let s;
+    try { s = JSON.parse(txt); } catch { s = null; }
+    if (!s || s.phase !== "play" || !Array.isArray(s.players) || !s.players.length) {
+      alert("that is not a night desk game file"); return;
+    }
+    state = s;
+    localStorage.setItem(STORE, JSON.stringify(state));
+    $("#setup").classList.add("hidden");
+    $("#play").classList.remove("hidden");
+    renderPlay();
+  });
+});
+
 $("#btn-newgame").addEventListener("click", () => {
   if (!confirm("Start a new game? The current one is discarded.")) return;
   localStorage.removeItem(STORE);
@@ -618,6 +645,7 @@ $("#btn-newgame").addEventListener("click", () => {
   $("#summarybox").replaceChildren();
   $("#btn-summary").classList.add("hidden");
   $("#btn-stats").classList.add("hidden");
+  $("#btn-handoff").classList.add("hidden");
   $("#names").value = "";
   $("#namecount").textContent = seatText(0);
   $("#nameerr").classList.add("hidden");

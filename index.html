@@ -59,6 +59,8 @@
       <p id="nameerr" class="error hidden"></p>
       <div class="row">
         <button id="btn-rand" class="btn primary">Deal Roles</button>
+        <button id="btn-import" class="btn">Import Game…</button>
+        <input type="file" id="importfile" accept=".json,application/json" class="hidden">
       </div>
     </div>
     <div id="preview" class="card hidden">
@@ -89,6 +91,7 @@
       <div style="display:flex; gap:0.5rem; margin-top:0.5rem">
         <button id="btn-summary" class="btn hidden" style="flex:1">Full Export</button>
         <button id="btn-stats" class="btn hidden" style="flex:1">Stats Export</button>
+        <button id="btn-handoff" class="btn hidden" style="flex:1">Game Export</button>
       </div>
       <div id="summarybox"></div>
     </aside>
