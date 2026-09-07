@@ -613,7 +613,8 @@ $("#btn-stats").addEventListener("click", () => {
 $("#btn-handoff").addEventListener("click", () => {
   const a = document.createElement("a");
   a.href = URL.createObjectURL(new Blob([JSON.stringify(state)], { type: "application/json" }));
-  a.download = "night-desk-game.json";
+  const ts = new Date().toISOString().slice(0, 16).replace("T", " ").replace(":", "");
+  a.download = `night-desk-game ${ts}.json`;
   a.click();
 });
 
