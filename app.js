@@ -40,9 +40,12 @@ function validateNames(names) {
 
 function ghostSeats(count, size = 15) {
   const seats = new Set();
-  if (count && roll(2)) seats.add(4 + roll(3));
   const spare = shuffled(Array.from({ length: size - 6 }, (_, i) => i + 7));
-  while (seats.size < count) seats.add(spare.pop());
+  let pr = false;
+  for (let i = 0; i < count; i++) {
+    if (!pr && roll(2)) { seats.add(4 + roll(3)); pr = true; }
+    else seats.add(spare.pop());
+  }
   return seats;
 }
 
@@ -727,6 +730,10 @@ function selftest() {
     ok(seats.length === 16 && g.length === 2, "14p mode is 14 plus 2 ghosts");
     ok(!g.some((p) => p.pos <= 3) && g.filter((p) => p.pos <= 6).length <= 1, "14p ghosts land like 13p");
   }
+  let pr = 0;
+  for (let run = 0; run < 2000; run++)
+    if (deal(Array.from({ length: 13 }, (_, i) => "P" + i)).some((p) => p.ghost && p.pos <= 6)) pr++;
+  ok(pr > 1380 && pr < 1620, "second ghost flips when the first is vanilla, got " + pr + " of 2000");
   state.players = deal(Array.from({ length: 14 }, (_, i) => "P" + i), true);
   ok(n0Kp() === 0, "14p mode has no night 0 kill");
   state = keep;
