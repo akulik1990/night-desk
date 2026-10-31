@@ -38,18 +38,19 @@ function validateNames(names) {
     throw new Error("need 13 to 15 on the roster, not " + names.length);
 }
 
-function ghostSeats(count) {
+function ghostSeats(count, size = 15) {
   const seats = new Set();
   if (count && roll(2)) seats.add(4 + roll(3));
-  const spare = shuffled([7, 8, 9, 10, 11, 12, 13, 14, 15]);
+  const spare = shuffled(Array.from({ length: size - 6 }, (_, i) => i + 7));
   while (seats.size < count) seats.add(spare.pop());
   return seats;
 }
 
-function deal(names) {
-  const ghosts = ghostSeats(15 - names.length);
+function deal(names, quiet) {
+  const size = quiet ? 16 : 15;
+  const ghosts = ghostSeats(size - names.length, size);
   const q = shuffled(names);
-  return Array.from({ length: 15 }, (_, i) => {
+  return Array.from({ length: size }, (_, i) => {
     const pos = i + 1;
     return ghosts.has(pos)
       ? { pos, name: GHOST, ghost: true }
@@ -63,7 +64,7 @@ const alignOf = (p) => (p.pos <= 3 ? "Mafia" : "Town");
 const byName = (name) => state.players.find((p) => p.name === name);
 const special = (pos) => state.players.find((p) => p.pos === pos);
 const ghostCount = () => state.players.filter((p) => p.ghost).length;
-const n0Kp = () => (state.quiet14 ? 0 : Math.max(0, 2 - ghostCount()));
+const n0Kp = () => Math.max(0, 2 - ghostCount());
 const killPoints = (nd, mafiaAlive) =>
   nd.night === 0 ? n0Kp() : mafiaAlive === 3 ? 2 : 1;
 
@@ -188,7 +189,6 @@ function nightText(nd, t) {
   const kills = [...new Set(nd.kills.filter(Boolean))];
   const ds = nd.kills[0] && nd.kills[0] === nd.kills[1] ? " (ds)" : "";
   if (kills.length) lines.push(`mafia: ||killed ${kills.join(", ")}${ds}||`);
-  else if (nd.night === 0 && state.quiet14) lines.push("mafia: ||no kill, 14p||");
   if (nd.cop) {
     const r = copResult(nd);
     lines.push(r ? `cop: ||check ${nd.cop} - ${r.verdict} to ${r.to}||` : `cop: ||check ${nd.cop}||`);
@@ -541,6 +541,7 @@ function update(keepId) {
 }
 
 let pendingDeal = null;
+let pendingQuiet = false;
 
 function renderPreview() {
   $("#preview-list").replaceChildren(...pendingDeal.map((p) =>
@@ -552,14 +553,15 @@ function renderPreview() {
 }
 
 function seatText(n) {
-  const ghosts = n >= 13 && n <= 15 ? 15 - n : 0;
-  return `${n} of 15 seats` +
+  const size = $("#quiet14").checked ? 16 : 15;
+  const ghosts = n >= 13 && n <= size ? size - n : 0;
+  return `${n} of ${size} seats` +
     (ghosts ? `, ${ghosts} ghost${ghosts > 1 ? "s" : ""} filling in` : "");
 }
 
-$("#names").addEventListener("input", () => {
-  $("#namecount").textContent = seatText(parseNames($("#names").value).length);
-});
+const recount = () => { $("#namecount").textContent = seatText(parseNames($("#names").value).length); };
+$("#names").addEventListener("input", recount);
+$("#quiet14").addEventListener("change", recount);
 
 function doDeal() {
   const err = $("#nameerr");
@@ -569,7 +571,8 @@ function doDeal() {
     validateNames(names);
     if ($("#quiet14").checked && names.length !== 14)
       throw new Error("14p mode needs exactly 14 on the roster, not " + names.length);
-    pendingDeal = deal(names);
+    pendingQuiet = $("#quiet14").checked;
+    pendingDeal = deal(names, pendingQuiet);
     renderPreview();
   } catch (e) {
     err.textContent = e.message;
@@ -580,7 +583,7 @@ $("#btn-rand").addEventListener("click", doDeal);
 $("#btn-redeal").addEventListener("click", doDeal);
 
 $("#btn-accept").addEventListener("click", () => {
-  state = { phase: "play", players: pendingDeal, nights: [], votes: {}, quiet14: $("#quiet14").checked };
+  state = { phase: "play", players: pendingDeal, nights: [], votes: {}, quiet14: pendingQuiet };
   $("#setup").classList.add("hidden");
   $("#play").classList.remove("hidden");
   renderPlay();
@@ -718,10 +721,14 @@ function selftest() {
   ok(night({ kills: [nm(7), ""], vigi: nm(8) }).sort().join() === [nm(7), nm(8)].sort().join(),
      "vigi adds a kill");
   ok(night({ medic: nm(8) }).length === 0, "save on an untouched player");
-  state.players = deal(Array.from({ length: 14 }, (_, i) => "P" + i));
-  ok(n0Kp() === 1, "14 players, one night 0 kill");
-  state.quiet14 = true;
-  ok(n0Kp() === 0, "14p mode drops the night 0 kill");
+  for (let run = 0; run < 400; run++) {
+    const seats = deal(Array.from({ length: 14 }, (_, i) => "P" + i), true);
+    const g = seats.filter((p) => p.ghost);
+    ok(seats.length === 16 && g.length === 2, "14p mode is 14 plus 2 ghosts");
+    ok(!g.some((p) => p.pos <= 3) && g.filter((p) => p.pos <= 6).length <= 1, "14p ghosts land like 13p");
+  }
+  state.players = deal(Array.from({ length: 14 }, (_, i) => "P" + i), true);
+  ok(n0Kp() === 0, "14p mode has no night 0 kill");
   state = keep;
 
   const probe = (kind, vars) => {
