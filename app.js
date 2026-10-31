@@ -38,28 +38,15 @@ function validateNames(names) {
     throw new Error("need 13 to 15 on the roster, not " + names.length);
 }
 
-function ghostSeats(count, size = 15) {
-  const seats = new Set();
-  const pool = shuffled(Array.from({ length: size - 3 }, (_, i) => i + 4));
-  for (let i = 0; i < count; i++) {
-    const pr = [...seats].some((x) => x <= 6);
-    const seat = pr ? pool.find((x) => x > 6) : pool[0];
-    pool.splice(pool.indexOf(seat), 1);
-    seats.add(seat);
-  }
-  return seats;
-}
-
 function deal(names, quiet) {
   const size = quiet ? 16 : 15;
-  const ghosts = ghostSeats(size - names.length, size);
-  const q = shuffled(names);
-  return Array.from({ length: size }, (_, i) => {
-    const pos = i + 1;
-    return ghosts.has(pos)
-      ? { pos, name: GHOST, ghost: true }
-      : { pos, name: q.pop(), ghost: false };
-  });
+  const all = [...names, ...Array(size - names.length).fill(null)];
+  const ghosts = (xs) => xs.filter((n) => n === null).length;
+  let seats;
+  do seats = shuffled(all);
+  while (ghosts(seats.slice(0, 3)) || ghosts(seats.slice(3, 6)) > 1);
+  return seats.map((name, i) =>
+    name === null ? { pos: i + 1, name: GHOST, ghost: true } : { pos: i + 1, name, ghost: false });
 }
 
 const roleOf = (p) =>
@@ -731,10 +718,12 @@ function selftest() {
     ok(seats.length === 16 && g.length === 2, "14p mode is 14 plus 2 ghosts");
     ok(!g.some((p) => p.pos <= 3) && g.filter((p) => p.pos <= 6).length <= 1, "14p ghosts land like 13p");
   }
-  let pr = 0;
-  for (let run = 0; run < 2000; run++)
-    if (deal(Array.from({ length: 13 }, (_, i) => "P" + i)).some((p) => p.ghost && p.pos <= 6)) pr++;
-  ok(pr > 830 && pr < 990, "13p ghosts hit a pr about 45% of the time, got " + pr + " of 2000");
+  for (const [n, lo, hi] of [[14, 420, 580], [13, 760, 960]]) {
+    let pr = 0;
+    for (let run = 0; run < 2000; run++)
+      if (deal(Array.from({ length: n }, (_, i) => "P" + i)).some((p) => p.ghost && p.pos <= 6)) pr++;
+    ok(pr >= lo && pr <= hi, `${n} players put a ghost on a pr ${pr} times in 2000`);
+  }
   state.players = deal(Array.from({ length: 14 }, (_, i) => "P" + i), true);
   ok(n0Kp() === 0, "14p mode has no night 0 kill");
   state = keep;
