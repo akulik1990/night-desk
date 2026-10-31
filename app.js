@@ -63,7 +63,7 @@ const alignOf = (p) => (p.pos <= 3 ? "Mafia" : "Town");
 const byName = (name) => state.players.find((p) => p.name === name);
 const special = (pos) => state.players.find((p) => p.pos === pos);
 const ghostCount = () => state.players.filter((p) => p.ghost).length;
-const n0Kp = () => Math.max(0, 2 - ghostCount());
+const n0Kp = () => (state.quiet14 ? 0 : Math.max(0, 2 - ghostCount()));
 const killPoints = (nd, mafiaAlive) =>
   nd.night === 0 ? n0Kp() : mafiaAlive === 3 ? 2 : 1;
 
@@ -188,6 +188,7 @@ function nightText(nd, t) {
   const kills = [...new Set(nd.kills.filter(Boolean))];
   const ds = nd.kills[0] && nd.kills[0] === nd.kills[1] ? " (ds)" : "";
   if (kills.length) lines.push(`mafia: ||killed ${kills.join(", ")}${ds}||`);
+  else if (nd.night === 0 && state.quiet14) lines.push("mafia: ||no kill, 14p||");
   if (nd.cop) {
     const r = copResult(nd);
     lines.push(r ? `cop: ||check ${nd.cop} - ${r.verdict} to ${r.to}||` : `cop: ||check ${nd.cop}||`);
@@ -557,7 +558,9 @@ function seatText(n) {
 }
 
 $("#names").addEventListener("input", () => {
-  $("#namecount").textContent = seatText(parseNames($("#names").value).length);
+  const n = parseNames($("#names").value).length;
+  $("#namecount").textContent = seatText(n);
+  $("#quiet14-row").classList.toggle("hidden", n !== 14);
 });
 
 function doDeal() {
@@ -577,7 +580,8 @@ $("#btn-rand").addEventListener("click", doDeal);
 $("#btn-redeal").addEventListener("click", doDeal);
 
 $("#btn-accept").addEventListener("click", () => {
-  state = { phase: "play", players: pendingDeal, nights: [], votes: {} };
+  const quiet14 = $("#quiet14").checked && pendingDeal.filter((p) => p.ghost).length === 1;
+  state = { phase: "play", players: pendingDeal, nights: [], votes: {}, quiet14 };
   $("#setup").classList.add("hidden");
   $("#play").classList.remove("hidden");
   renderPlay();
@@ -649,6 +653,8 @@ $("#btn-newgame").addEventListener("click", () => {
   $("#btn-handoff").classList.add("hidden");
   $("#names").value = "";
   $("#namecount").textContent = seatText(0);
+  $("#quiet14").checked = false;
+  $("#quiet14-row").classList.add("hidden");
   $("#nameerr").classList.add("hidden");
   $("#preview").classList.add("hidden");
   $("#preview-list").replaceChildren();
@@ -714,6 +720,10 @@ function selftest() {
   ok(night({ kills: [nm(7), ""], vigi: nm(8) }).sort().join() === [nm(7), nm(8)].sort().join(),
      "vigi adds a kill");
   ok(night({ medic: nm(8) }).length === 0, "save on an untouched player");
+  state.players = deal(Array.from({ length: 14 }, (_, i) => "P" + i));
+  ok(n0Kp() === 1, "14 players, one night 0 kill");
+  state.quiet14 = true;
+  ok(n0Kp() === 0, "14p mode drops the night 0 kill");
   state = keep;
 
   const probe = (kind, vars) => {

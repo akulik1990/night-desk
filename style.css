@@ -272,6 +272,7 @@ textarea:focus, select:focus { outline: 1px solid var(--accent); }
 .row { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; margin-top: 0.6rem; }
 .counter { color: var(--muted); font-size: 0.85rem; margin-top: 0.3rem; }
 .error { color: var(--maf); font-size: 0.85rem; margin-top: 0.3rem; }
+.opt { display: flex; align-items: center; gap: 0.5rem; color: var(--muted); font-size: 0.85rem; margin-top: 0.4rem; }
 
 ol.roster { list-style: none; }
 ol.roster li {
