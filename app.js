@@ -558,9 +558,7 @@ function seatText(n) {
 }
 
 $("#names").addEventListener("input", () => {
-  const n = parseNames($("#names").value).length;
-  $("#namecount").textContent = seatText(n);
-  $("#quiet14-row").classList.toggle("hidden", n !== 14);
+  $("#namecount").textContent = seatText(parseNames($("#names").value).length);
 });
 
 function doDeal() {
@@ -569,6 +567,8 @@ function doDeal() {
   try {
     const names = parseNames($("#names").value);
     validateNames(names);
+    if ($("#quiet14").checked && names.length !== 14)
+      throw new Error("14p mode needs exactly 14 on the roster, not " + names.length);
     pendingDeal = deal(names);
     renderPreview();
   } catch (e) {
@@ -580,8 +580,7 @@ $("#btn-rand").addEventListener("click", doDeal);
 $("#btn-redeal").addEventListener("click", doDeal);
 
 $("#btn-accept").addEventListener("click", () => {
-  const quiet14 = $("#quiet14").checked && pendingDeal.filter((p) => p.ghost).length === 1;
-  state = { phase: "play", players: pendingDeal, nights: [], votes: {}, quiet14 };
+  state = { phase: "play", players: pendingDeal, nights: [], votes: {}, quiet14: $("#quiet14").checked };
   $("#setup").classList.add("hidden");
   $("#play").classList.remove("hidden");
   renderPlay();
@@ -654,7 +653,6 @@ $("#btn-newgame").addEventListener("click", () => {
   $("#names").value = "";
   $("#namecount").textContent = seatText(0);
   $("#quiet14").checked = false;
-  $("#quiet14-row").classList.add("hidden");
   $("#nameerr").classList.add("hidden");
   $("#preview").classList.add("hidden");
   $("#preview-list").replaceChildren();
